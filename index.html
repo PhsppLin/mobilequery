@@ -1,11 +1,12 @@
 
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>手機價格查詢系統</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>
+<title>手機價格查詢系統</title>
+<style>
     body { font-family: system-ui, sans-serif; background: #101f30; color: white; padding: 20px; }
     input, button {
       font-size: 16px; width: 100%; padding: 10px; margin-bottom: 10px;
@@ -196,25 +197,24 @@ body {
 </head>
 <body>
 <div id="particles-js"></div>
-  <h1 style="text-align: center; margin-bottom: 24px;">手機價格查詢系統</h1>
-  <input id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256">
-  <button class="search-button" onclick="search()">搜尋</button>
-  <div id="resultList"></div>
-
-  <div id="selectedInfoWrapper" class="hidden">
-    <div class="row1" id="selectedInfo"></div>
-    <div class="row2" style="display:flex;justify-content:space-between">
-      <div id="priceInfo"></div>
-      <div id="insuranceInfo"></div>
-    </div>
-  </div>
-
-  <div id="projectList" class="hidden">
-    <div id="filterWrapper" class="hidden"><input type="text" id="filterInput" placeholder="輸入月租條件，例如：企 999"></div>
-    <div id="projects"></div>
-    <div class="pagination" id="pagination"></div>
-  </div>
-
+<h1 style="text-align: center; margin-bottom: 24px;">手機價格查詢系統</h1><div id="last-updated" style="text-align: center; color: yellow; font-size: 0.8em; margin-bottom: 8px;">資料更新時間：載入中...</div>
+<!-- 順序調整 -->
+<input id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256"/>
+<button class="search-button" onclick="search()">搜尋</button>
+<button class="search-button" id="clearButton" onclick="clearSearch()" style="margin-top: 8px; background: #ff9800;">清除</button>
+<div id="resultList"></div>
+<div class="hidden" id="selectedInfoWrapper">
+<div class="row1" id="selectedInfo"></div>
+<div class="row2" style="display:flex;justify-content:space-between">
+<div id="priceInfo"></div>
+<div id="insuranceInfo"></div>
+</div>
+</div>
+<div class="hidden" id="projectList">
+<div class="hidden" id="filterWrapper"><input id="filterInput" placeholder="輸入月租條件，例如：企 999" type="text"/></div>
+<div id="projects"></div>
+<div class="pagination" id="pagination"></div>
+</div>
 <script>
 let rawData = [];
 let selectedCode = "";
@@ -327,7 +327,6 @@ document.getElementById("filterInput").addEventListener("input", () => {
 });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 <script>
 particlesJS("particles-js", {
   "particles": {
@@ -354,6 +353,29 @@ particlesJS("particles-js", {
   "retina_detect": true
 });
 </script>
-</body>
+<script>
+// 自動顯示更新日期
+fetch("mobilequery_data.json").then(res => res.json()).then(data => {
+  const date = data?.metadata?.lastUpdated || "未知";
+  document.getElementById("last-updated").innerText = "資料更新時間：" + date;
+});
 
+// 清除按鈕功能
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("resultList").innerHTML = "";
+  document.getElementById("projects").innerHTML = "";
+  document.getElementById("selectedInfoWrapper").classList.add("hidden");
+  document.getElementById("projectList").classList.add("hidden");
+  document.getElementById("filterInput").value = "";
+  document.getElementById("filterWrapper").classList.add("hidden");
+  document.getElementById("pagination").innerHTML = "";
+  document.getElementById("selectedInfo").innerText = "";
+  document.getElementById("priceInfo").innerText = "";
+  document.getElementById("insuranceInfo").innerText = "";
+  selectedCode = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>  <script src="main.js"></script>
+</body>
 </html>
