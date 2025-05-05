@@ -198,8 +198,10 @@ body {
 <body>
 <div id="particles-js"></div>
 <h1 style="text-align: center; margin-bottom: 24px;">手機價格查詢系統</h1><div id="last-updated" style="text-align: center; color: yellow; font-size: 0.8em; margin-bottom: 8px;">資料更新時間：載入中...</div>
-<input id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256"/><button class="search-button" id="clearButton" onclick="clearSearch()" style="margin-top: 8px; background: #ff9800;">清除</button>
+<!-- 順序調整 -->
+<input id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256"/>
 <button class="search-button" onclick="search()">搜尋</button>
+<button class="search-button" id="clearButton" onclick="clearSearch()" style="margin-top: 8px; background: #ff9800;">清除</button>
 <div id="resultList"></div>
 <div class="hidden" id="selectedInfoWrapper">
 <div class="row1" id="selectedInfo"></div>
@@ -368,6 +370,10 @@ function clearSearch() {
   document.getElementById("filterInput").value = "";
   document.getElementById("filterWrapper").classList.add("hidden");
   document.getElementById("pagination").innerHTML = "";
+  document.getElementById("selectedInfo").innerText = "";
+  document.getElementById("priceInfo").innerText = "";
+  document.getElementById("insuranceInfo").innerText = "";
+  selectedCode = "";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 </script></body>
