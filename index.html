@@ -1,380 +1,104 @@
 
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>
-<title>手機價格查詢系統</title>
-<style>
-    body { font-family: system-ui, sans-serif; background: #101f30; color: white; padding: 20px; }
-    input, button {
-      font-size: 16px; width: 100%; padding: 10px; margin-bottom: 10px;
-      border-radius: 5px; border: 1px solid #1de9b6; background: #1a1a1a; color: white;
-    }
-    button.select-btn {
-      background: #00e5ff; color: black; border: none; font-weight: bold;
-      box-shadow: 0 0 4px #00e5ff; transition: 0.3s;
-    }
-    button.select-btn:hover {
-      background: #1de9b6; transform: scale(1.05); box-shadow: 0 0 10px #1de9b6;
-    }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #1de9b6; padding: 8px; text-align: left; }
-    th { background: #0d2939; }
-    .card { border: 1px solid #1de9b6; border-radius: 10px; padding: 12px; margin-top: 10px; background: rgba(255,255,255,0.05); }
-    .result-row { display: flex; flex-wrap: wrap; gap: 10px; }
-    .result-row > div { flex: 1 1 22%; min-width: 120px; }
-    #selectedInfoWrapper { position: sticky; top: 0; background: #00bcd4; padding: 10px; z-index: 99; color: black; border-radius: 6px; }
-    .pagination { text-align: center; margin: 15px 0; }
-    .pagination button { background: transparent; border: 1px solid #1de9b6; color: #1de9b6; margin: 0 3px; }
-  
-  input, button, .select-btn, #filterInput {
-    max-width: 800px;
-    margin: 0 auto;
-    display: block;
-  }
-  .card {
-    animation: slideIn 0.5s ease;
-  }
-  .fade-enter {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  .fade-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.4s, transform 0.4s;
-  }
-  .select-btn {
-    background: #00e5ff;
-    color: black;
-    border: none;
-    font-weight: bold;
-    box-shadow: 0 0 4px #00e5ff;
-    transition: 0.3s;
-    position: relative;
-    overflow: hidden;
-  }
-  .select-btn::after {
-    content: "";
-    position: absolute;
-    width: 200%;
-    height: 200%;
-    background: rgba(255, 255, 255, 0.2);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    border-radius: 50%;
-    transition: transform 0.5s ease;
-  }
-  .select-btn:active::after {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  .select-btn:hover {
-    background: #1de9b6;
-    box-shadow: 0 0 10px #1de9b6;
-    transform: scale(1.05);
-  }
-  table, #projects, #resultList {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .form-block, input, button, .select-btn, #filterInput, table, #projects, .card {
-    width: 100%;
-    max-width: 800px;
-    box-sizing: border-box;
-    margin: 0 auto;
-  }
-  #filterWrapper.hidden { display: none; }
-  
-  .form-block, input, .select-btn, #filterInput, table, #projects, .card {
-    width: 100%;
-    max-width: 800px;
-    box-sizing: border-box;
-    margin: 0 auto;
-  }
-  button.search-button {
-    width: 100%;
-    max-width: 800px;
-    box-sizing: border-box;
-    padding: 10px 0;
-    margin: 0 auto;
-    display: block;
-    border-radius: 6px;
-    font-weight: bold;
-    background: #00bcd4;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  button.search-button:hover {
-    background: #26c6da;
-  }
-  #filterWrapper.hidden { display: none; }
-  
-  .form-block, input, .select-btn, #filterInput, table, #projects, .card {
-    width: 100%;
-    max-width: 800px;
-    box-sizing: border-box;
-    margin: 0 auto;
-  }
-  button.search-button {
-    width: 100%;
-    max-width: 800px;
-    box-sizing: border-box;
-    padding: 10px 0;
-    margin: 0 auto;
-    display: block;
-    border-radius: 6px;
-    font-weight: bold;
-    background: #00bcd4;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  button.search-button:hover {
-    background: #26c6da;
-  }
-  #filterWrapper.hidden { display: none; }
-  #pagination {
-    text-align: right;
-    max-width: 800px;
-    margin: 10px auto 0 auto;
-    font-weight: bold;
-    font-size: 1rem;
-    color: #00e5ff;
-  }
-  .page-link {
-    display: inline;
-    margin-left: 4px;
-    cursor: pointer;
-    color: #00e5ff;
-  }
-  .page-link:hover {
-    color: #1de9b6;
-    text-decoration: underline;
-  }
-  
-/* 電競強化樣式 */
-body {
-  background: #0f0f1a !important;
-}
-#particles-js {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  top: 0;
-  left: 0;
-}
-.rgb-line {
-  height: 4px;
-  width: 100%;
-  background: linear-gradient(270deg, #00ffff, #ff00ff, #ffff00);
-  background-size: 600% 600%;
-  animation: rgbflow 4s ease infinite;
-  margin-bottom: 12px;
-}
-@keyframes rgbflow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.project-price {
-  color: #FFD700 !important;
-  font-weight: bold;
-}
-
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>手機價格查詢系統</title>
+    <style>
+        body {
+            background-color: #0d0d16;
+            color: white;
+            font-family: "Microsoft JhengHei", sans-serif;
+            text-align: center;
+            padding: 2rem;
+        }
+        input {
+            padding: 0.6rem;
+            width: 60%;
+            border-radius: 6px;
+            border: none;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        button {
+            padding: 0.6rem 1.5rem;
+            margin: 0.3rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+        .search-btn { background-color: #49bcd6; }
+        .clear-btn { background-color: #f4a12f; }
+        #update-time {
+            color: yellow;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
-<div id="particles-js"></div>
-<h1 style="text-align: center; margin-bottom: 24px;">手機價格查詢系統</h1><div id="last-updated" style="text-align: center; color: yellow; font-size: 0.8em; margin-bottom: 8px;">資料更新時間：載入中...</div>
-<!-- 順序調整 -->
-<input id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256"/>
-<button class="search-button" onclick="search()">搜尋</button>
-<button class="search-button" id="clearButton" onclick="clearSearch()" style="margin-top: 8px; background: #ff9800;">清除</button>
-<div id="resultList"></div>
-<div class="hidden" id="selectedInfoWrapper">
-<div class="row1" id="selectedInfo"></div>
-<div class="row2" style="display:flex;justify-content:space-between">
-<div id="priceInfo"></div>
-<div id="insuranceInfo"></div>
-</div>
-</div>
-<div class="hidden" id="projectList">
-<div class="hidden" id="filterWrapper"><input id="filterInput" placeholder="輸入月租條件，例如：企 999" type="text"/></div>
-<div id="projects"></div>
-<div class="pagination" id="pagination"></div>
-</div>
-<script>
-let rawData = [];
-let selectedCode = "";
-let page = 1;
-let perPage = 20;
+    <h1>手機價格查詢系統</h1>
+    <div id="update-time">資料更新時間：載入中...</div>
+    <input type="text" id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256"/>
+    <br/>
+    <button class="search-btn" onclick="search()">搜尋</button>
+    <button class="clear-btn" onclick="clearAll()">清除</button>
+    <div id="result" style="margin-top: 2rem;"></div>
 
-fetch("mobilequery_data.json").then(res => res.json()).then(data => { rawData = data; });
+    <script>
+        let rawData = [];
 
-function search() {
-  document.getElementById("projects").innerHTML = "";
-  const keyword = document.getElementById("searchInput").value.trim();
-  const keywords = keyword.split(/\s+/).filter(k => k);
-  const matches = rawData.filter(d => keywords.every(k => d.機型.toLowerCase().includes(k.toLowerCase())));
-  const unique = Array.from(new Map(matches.map(d => [d.代碼, d])).values());
-  unique.sort((a, b) => a.機型.localeCompare(b.機型));
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  document.body.style.zoom = '100%';
+        async function loadMetadata() {
+            try {
+                const res = await fetch('metadata.json');
+                const metadata = await res.json();
+                document.getElementById("update-time").textContent = "資料更新時間：" + metadata.updated_at;
+            } catch {
+                document.getElementById("update-time").textContent = "資料更新時間：無法載入";
+            }
+        }
 
-  const resultList = document.getElementById("resultList");
-  resultList.innerHTML = "";
-  document.getElementById("projectList").classList.add("hidden");
-  document.getElementById("selectedInfoWrapper").classList.add("hidden");
+        async function loadData() {
+            try {
+                const res = await fetch('mobilequery_data.json');
+                const json = await res.json();
+                rawData = json.data;
+            } catch {
+                document.getElementById("result").innerHTML = "<p style='color:red;'>無法載入資料庫</p>";
+            }
+        }
 
-  if (unique.length === 0) {
-    resultList.innerHTML = "<p>找不到符合的手機型號。</p>";
-    return;
-  }
+        function search() {
+            const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+            const result = rawData.filter(item => item["機型"] && item["機型"].toLowerCase().includes(keyword));
 
-  const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th>選取</th><th>#</th><th>手機名稱</th><th>空機</th><th>保險</th></tr></thead><tbody>";
-  unique.forEach((d, idx) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td><button class="select-btn" onclick="selectPhone('${d.代碼}', '${d.機型}')">選取</button></td>
-      <td>${idx + 1}</td><td>${d.機型}</td><td>${d.單機價 || "—"}</td><td>${d.保險 || "—"}</td>`;
-    table.querySelector("tbody").appendChild(row);
-  });
-  resultList.appendChild(table);
-}
+            if (result.length === 0) {
+                document.getElementById("result").innerText = "找不到符合的手機型號。";
+                return;
+            }
 
-function selectPhone(code, name) {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  selectedCode = code;
-  page = 1;
-  document.getElementById("resultList").innerHTML = "";
-  document.getElementById("projectList").classList.remove("hidden");
-  document.getElementById("selectedInfoWrapper").classList.remove("hidden");
-  document.getElementById("selectedInfo").innerText = `選取手機：${name}`;
-  const phone = rawData.find(d => d.代碼 === code);
-  document.getElementById("priceInfo").innerText = `空機價：${phone?.單機價 || "—"}`;
-  document.getElementById("insuranceInfo").innerText = `保險：${phone?.保險 || "—"}`;
-  document.getElementById("filterInput").value = "";
-  document.getElementById("filterWrapper").classList.remove("hidden");
-  document.getElementById("filterWrapper").classList.remove("hidden");
-  renderProjects();
-}
+            const rows = result.map(row => `
+                <div style="background:#2d2d3a;padding:1rem;margin:0.5rem;border-radius:8px;">
+                    <strong>${row["機型"]}</strong><br/>
+                    空機：${row["單機價"]} 元<br/>
+                    專案價：${row["專案價"]} 元<br/>
+                    保險：${row["保險"] || "無"}
+                </div>
+            `).join("");
 
-function renderProjects() {
-  const filter = document.getElementById("filterInput").value.trim().toLowerCase();
-  const filterWords = filter.split(/\s+/).filter(w => w);
-  let list = rawData.filter(d => d.代碼 === selectedCode && filterWords.every(w => d.專案欄位.toLowerCase().includes(w)));
-  list.sort((a, b) => a.專案名稱.localeCompare(b.專案名稱));
+            document.getElementById("result").innerHTML = rows;
+        }
 
-  const projects = document.getElementById("projects");
-  projects.innerHTML = "";
-  const paginated = list.slice((page - 1) * perPage, page * perPage);
-  paginated.forEach(d => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <div class="result-row">
-        <div><strong>合約年限：</strong>${d.專案名稱}</div>
-        <div><strong>月租：</strong>${d.專案欄位}</div>
-        <div><strong>專案價：</strong><span style="color:#ffff66;">${d.專案價格}</span></div>
-      </div>
-    `;
-    projects.appendChild(div);
-  });
+        function clearAll() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("result").innerHTML = "";
+        }
 
-  renderPagination(list.length);
-}
-
-function renderPagination(total) {
-  const pagination = document.getElementById("pagination");
-  pagination.innerHTML = "";
-  const pages = Math.ceil(total / perPage);
-  if (pages <= 1) return;
-
-  const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
-  const createBtn = (label, goTo) => {
-    const btn = document.createElement("button");
-    btn.innerText = label;
-    btn.onclick = () => {
-      page = goTo;
-      renderProjects();
-      scrollTop();
-    };
-    if (goTo === page) btn.style.background = "#1de9b6";
-    return btn;
-  };
-
-  if (page > 1) pagination.appendChild(createBtn("◀", page - 1));
-  for (let i = 1; i <= pages; i++) pagination.appendChild(createBtn(i, i));
-  if (page < pages) pagination.appendChild(createBtn("▶", page + 1));
-}
-
-document.getElementById("filterInput").addEventListener("input", () => {
-  page = 1;
-  renderProjects();
-});
-</script>
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script>
-particlesJS("particles-js", {
-  "particles": {
-    "number": { "value": 40 },
-    "color": { "value": "#00e5ff" },
-    "shape": { "type": "circle" },
-    "opacity": { "value": 0.5 },
-    "size": { "value": 3 },
-    "line_linked": {
-      "enable": true,
-      "distance": 150,
-      "color": "#00e5ff",
-      "opacity": 0.4,
-      "width": 1
-    },
-    "move": { "enable": true, "speed": 2 }
-  },
-  "interactivity": {
-    "detect_on": "canvas",
-    "events": {
-      "onhover": { "enable": true, "mode": "grab" }
-    }
-  },
-  "retina_detect": true
-});
-</script>
-<script>
-// 自動顯示更新日期
-fetch("mobilequery_data.json").then(res => res.json()).then(data => {
-  const date = data?.metadata?.lastUpdated || "未知";
-  document.getElementById("last-updated").innerText = "資料更新時間：" + date;
-});
-
-// 清除按鈕功能
-function clearSearch() {
-  document.getElementById("searchInput").value = "";
-  document.getElementById("resultList").innerHTML = "";
-  document.getElementById("projects").innerHTML = "";
-  document.getElementById("selectedInfoWrapper").classList.add("hidden");
-  document.getElementById("projectList").classList.add("hidden");
-  document.getElementById("filterInput").value = "";
-  document.getElementById("filterWrapper").classList.add("hidden");
-  document.getElementById("pagination").innerHTML = "";
-  document.getElementById("selectedInfo").innerText = "";
-  document.getElementById("priceInfo").innerText = "";
-  document.getElementById("insuranceInfo").innerText = "";
-  selectedCode = "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-</script></body>
+        window.onload = async () => {
+            await loadMetadata();
+            await loadData();
+        };
+    </script>
+</body>
 </html>
