@@ -48,7 +48,7 @@
       if (!keyword || !db) return;
 
       const keywords = keyword.split(/\s+/).filter(k => k.length > 0);
-      const whereClause = keywords.map(k => `LOWER(機型) LIKE '%${k.replace(/'/g, "''")}%'`).join(' AND ');
+      const whereClause = '機型 IS NOT NULL AND ' + keywords.map(k => `LOWER(機型) LIKE '%${k.replace(/'/g, "''")}%'`).join(' AND ');
       const phones = db.exec(`SELECT * FROM phones WHERE ${whereClause}`);
 
       if (phones.length === 0) {
