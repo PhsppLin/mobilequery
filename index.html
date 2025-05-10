@@ -27,7 +27,7 @@
   <script>
     let rawData = [];
 
-    fetch("metadata.json")
+    fetch("https://raw.githubusercontent.com/PhsppLin/mobilequery/main/metadata.json")
       .then(res => res.json())
       .then(data => {
         document.getElementById("update-time").textContent = "資料更新時間：" + (data.updated_at || "未知");
@@ -35,7 +35,7 @@
         document.getElementById("update-time").textContent = "資料更新時間：無法載入";
       });
 
-    fetch("mobilequery_data.json.gz")
+    fetch("https://raw.githubusercontent.com/PhsppLin/mobilequery/main/mobilequery_data.json.gz")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const compressed = new Uint8Array(buffer);
