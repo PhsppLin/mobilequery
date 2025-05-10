@@ -27,7 +27,12 @@
   <button class="search-btn" onclick="search()">搜尋</button>
   <button class="clear-btn" onclick="clearSearch()">清除</button>
   <div id="result" style="margin-top:2rem;"></div>
-
+  <script src="sql-wasm.js"></script>
+  <script>
+  initSqlJs({ locateFile: filename => `sql-wasm.wasm` }).then(SQL => {
+    // ...
+  });
+  </script>
   <script>
     let db = null;
 
