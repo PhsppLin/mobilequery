@@ -3,48 +3,42 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>手機價格查詢系統</title>
-  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+  <title>手機查詢系統 SQLite 版</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <style>
     body { background-color: #0d0d16; color: white; font-family: sans-serif; text-align: center; padding: 2rem; }
     input { padding: 0.6rem; width: 60%; font-size: 1rem; border-radius: 6px; border: none; margin-bottom: 1rem; }
     button { padding: 0.6rem 1.2rem; font-size: 1rem; margin: 0.2rem; border-radius: 6px; border: none; cursor: pointer; }
     .search-btn { background-color: #4fc1e9; }
     .clear-btn { background-color: #f6a623; }
-    #update-time { color: yellow; margin-bottom: 1rem; }
-    .result-box { background: #2d2d3a; padding: 1rem; margin: 0.5rem auto; width: 70%; border-radius: 8px; }
+    .result-box {
+      background: #2d2d3a;
+      padding: 1rem;
+      margin: 0.5rem auto;
+      width: 70%;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
-  <h1>手機價格查詢系統</h1>
-  <div id="update-time">資料更新時間：載入中...</div>
-  <input type="text" id="searchInput" placeholder="請輸入手機名稱，例如：iPhone 256" />
+  <h1>📱 手機查詢系統（SQLite 離線版）</h1>
+  <input type="text" id="searchInput" placeholder="請輸入手機關鍵字，例如 iPhone 256" />
   <br/>
   <button class="search-btn" onclick="search()">搜尋</button>
   <button class="clear-btn" onclick="clearSearch()">清除</button>
   <div id="result" style="margin-top:2rem;"></div>
 
   <script>
-    let rawData = [];
+    let db = null;
 
-    fetch("metadata.json")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("update-time").textContent = "資料更新時間：" + (data.updated_at || "未知");
-      }).catch(() => {
-        document.getElementById("update-time").textContent = "資料更新時間：無法載入";
-      });
-
-    fetch("mobilequery_data.json.gz")
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
-        const compressed = new Uint8Array(buffer);
-        const text = pako.inflate(compressed, { to: "string" });
-        const json = JSON.parse(text);
-        rawData = json.data || [];
-      })
-      .catch(() => {
-        document.getElementById("result").innerHTML = "<p style='color:red;'>無法載入資料庫</p>";
+    // 載入 SQLite 資料庫
+    initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` })
+      .then(SQL => {
+        fetch("mobilequery.sqlite")
+          .then(res => res.arrayBuffer())
+          .then(buf => {
+            db = new SQL.Database(new Uint8Array(buf));
+          });
       });
 
     function search() {
@@ -52,27 +46,32 @@
       const resultDiv = document.getElementById("result");
       resultDiv.innerHTML = "";
 
-      if (!keyword) return;
+      if (!keyword || !db) return;
 
-      const results = rawData.filter(item =>
-        Object.values(item).some(val => val && val.toLowerCase().includes(keyword))
-      );
+      const phones = db.exec(`
+        SELECT * FROM phones WHERE LOWER(機型) LIKE '%${keyword.replace(/'/g, "''")}%'
+      `);
 
-      if (results.length === 0) {
+      if (phones.length === 0) {
         resultDiv.innerHTML = "<p>找不到符合的手機型號。</p>";
         return;
       }
 
-      results.forEach(row => {
-        const div = document.createElement("div");
-        div.className = "result-box";
-        div.innerHTML = `
-          <strong>${row["機型"]}</strong><br/>
-          空機價：${row["單機價"]} 元<br/>
-          專案價：${row["專案價"]} 元<br/>
-          保險：${row["保險"] || "無"}
+      phones[0].values.forEach(([代碼, 機型, 單機價, 保險]) => {
+        const planRows = db.exec(`SELECT 專案價, 來源頁, 來源欄位 FROM plans WHERE 代碼 = '${代碼.replace(/'/g, "''")}'`);
+        const plans = (planRows.length > 0) ? planRows[0].values : [];
+
+        let html = `
+          <div class="result-box">
+            <strong>${機型}</strong><br/>
+            空機價：${單機價} 元<br/>
+            保險：${保險 || "無"}<br/>
+            <hr/>
+            <strong>專案列表：</strong><br/>
         `;
-        resultDiv.appendChild(div);
+        html += plans.map(p => `📄 ${p[1]}｜${p[2]}：<b>${p[0]} 元</b>`).join("<br/>");
+        html += "</div>";
+        resultDiv.innerHTML += html;
       });
     }
 
