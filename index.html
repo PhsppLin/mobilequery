@@ -27,16 +27,10 @@
   <button class="search-btn" onclick="search()">搜尋</button>
   <button class="clear-btn" onclick="clearSearch()">清除</button>
   <div id="result" style="margin-top:2rem;"></div>
-  <script src="sql-wasm.js"></script>
-  <script>
-  initSqlJs({ locateFile: filename => `sql-wasm.wasm` }).then(SQL => {
-    // ...
-  });
-  </script>
+
   <script>
     let db = null;
 
-    // 載入 SQLite 資料庫
     initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` })
       .then(SQL => {
         fetch("mobilequery_data_split.sqlite")
@@ -53,9 +47,9 @@
 
       if (!keyword || !db) return;
 
-      const phones = db.exec(`
-        SELECT * FROM phones WHERE LOWER(機型) LIKE '%${keyword.replace(/'/g, "''")}%'
-      `);
+      const keywords = keyword.split(/\s+/).filter(k => k.length > 0);
+      const whereClause = keywords.map(k => `LOWER(機型) LIKE '%${k.replace(/'/g, "''")}%'`).join(' AND ');
+      const phones = db.exec(`SELECT * FROM phones WHERE ${whereClause}`);
 
       if (phones.length === 0) {
         resultDiv.innerHTML = "<p>找不到符合的手機型號。</p>";
@@ -68,13 +62,18 @@
 
         let html = `
           <div class="result-box">
-            <strong>${機型}</strong><br/>
+            <div style="font-weight:bold; font-size:1.1rem;">📱 ${機型}</div>
+            <div style="color:#ccc;">代碼：${代碼}</div>
             空機價：${單機價} 元<br/>
             保險：${保險 || "無"}<br/>
             <hr/>
-            <strong>專案列表：</strong><br/>
-        `;
-        html += plans.map(p => `📄 ${p[1]}｜${p[2]}：<b>${p[0]} 元</b>`).join("<br/>");
+            <strong>專案列表：</strong><br/>`;
+
+        html += plans.map(p => {
+          const field = p[2] || "（無欄位名稱）";
+          return `📄 ${p[1]}｜${field}：<b>${p[0]} 元</b>`;
+        }).join("<br/>");
+
         html += "</div>";
         resultDiv.innerHTML += html;
       });
