@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>手機查詢系統 SQLite 版</title>
+  <title>手機查詢系統 SQLite 離線版</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <style>
     body { background-color: #0d0d16; color: white; font-family: sans-serif; text-align: center; padding: 2rem; }
@@ -41,14 +41,17 @@
       });
 
     function search() {
-      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const keyword = document.getElementById("searchInput").value.trim();
       const resultDiv = document.getElementById("result");
       resultDiv.innerHTML = "";
 
       if (!keyword || !db) return;
 
-      const keywords = keyword.split(/\s+/).filter(k => k.length > 0);
-      const whereClause = '機型 IS NOT NULL AND ' + keywords.map(k => `LOWER(機型) LIKE '%${k.replace(/'/g, "''")}%'`).join(' AND ');
+      const normalize = str => str.toLowerCase().replace(/[\s_\-()（）]/g, '');
+      const keywords = keyword.split(/\s+/).map(normalize).filter(k => k.length > 0);
+      const whereClause = '機型 IS NOT NULL AND ' + keywords.map(k =>
+        `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(機型),'_',''),' ','') ,'(',''),')',''),'（','') LIKE '%${k}%'`
+      ).join(' AND ');
       const phones = db.exec(`SELECT * FROM phones WHERE ${whereClause}`);
 
       if (phones.length === 0) {
