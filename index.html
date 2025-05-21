@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手機價格查詢</title>
+  <!-- 引入 SQL.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/sql-wasm.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input { width: 300px; padding: 8px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>手機價格查詢</h1>
+  <input id="search" placeholder="輸入關鍵字...（品名、料號、品牌、專案）" />
+  <table id="results">
+    <thead>
+      <tr>
+        <th>料號</th>
+        <th>品名</th>
+        <th>品牌</th>
+        <th>專案</th>
+        <th>上架日</th>
+        <th>下架日</th>
+        <th>是否搭專案</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let db;
+    // 初始化 SQL.js
+    initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` })
+      .then(SQL => fetch('mobile_price_changes.db')
+        .then(res => res.arrayBuffer())
+        .then(buf => { db = new SQL.Database(new Uint8Array(buf)); })
+      );
+
+    document.getElementById('search').addEventListener('input', function(e) {
+      const kw = e.target.value.trim().toLowerCase();
+      const tbody = document.querySelector('#results tbody');
+      tbody.innerHTML = '';
+      if (!db || !kw) return;
+
+      const stmt = db.prepare(`
+        SELECT p.sku, p.name AS product_name, b.name AS brand_name, pr.name AS project_name,
+               pc.start_date, pc.end_date, pc.has_plan
+        FROM price_changes AS pc
+        JOIN products AS p ON pc.product_id = p.product_id
+        JOIN brands AS b ON p.brand_id = b.brand_id
+        JOIN projects AS pr ON pc.project_id = pr.project_id
+        WHERE lower(p.name) LIKE $kw
+           OR lower(p.sku) LIKE $kw
+           OR lower(b.name) LIKE $kw
+           OR lower(pr.name) LIKE $kw
+      `);
+      stmt.bind({ $kw: '%' + kw + '%' });
+
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.sku}</td>
+          <td>${row.product_name}</td>
+          <td>${row.brand_name}</td>
+          <td>${row.project_name}</td>
+          <td>${row.start_date}</td>
+          <td>${row.end_date || ''}</td>
+          <td>${row.has_plan ? 'Y' : 'N'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      stmt.free();
+    });
+  </script>
+</body>
+</html>
