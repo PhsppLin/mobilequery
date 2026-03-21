@@ -1,82 +1,709 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>手機價格查詢</title>
-  <!-- 引入 SQL.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/sql-wasm.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input { width: 300px; padding: 8px; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f2f2f2; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手機方案查詢系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #1a1a1f;
+    --surface2: #22222a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #4f7fff;
+    --accent2: #7ba4ff;
+    --text: #f0f0f4;
+    --text2: #9898a8;
+    --text3: #5a5a6e;
+    --success: #3dd68c;
+    --warning: #f5a623;
+    --danger: #ff6b6b;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: radial-gradient(ellipse at 60% 20%, rgba(79,127,255,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(123,164,255,0.07) 0%, transparent 50%),
+                var(--bg);
+  }
+  .login-box {
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+  }
+  .login-logo {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 22px;
+  }
+  .login-title { font-size: 20px; font-weight: 700; margin-bottom: 0.25rem; }
+  .login-sub { font-size: 13px; color: var(--text2); margin-bottom: 2rem; }
+  .field-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.05em; }
+  .field-input {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text); font-size: 15px;
+    font-family: 'Noto Sans TC', sans-serif;
+    outline: none; transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; padding: 12px;
+    background: var(--accent);
+    border: none; border-radius: var(--radius-sm);
+    color: #fff; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    font-family: 'Noto Sans TC', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  .login-btn:active { transform: scale(0.98); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .login-error {
+    margin-top: 0.75rem; font-size: 12px;
+    color: var(--danger); text-align: center; display: none;
+    padding: 8px; background: rgba(255,107,107,0.1);
+    border-radius: var(--radius-sm);
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MAIN APP ── */
+  #app { display: none; min-height: 100vh; }
+
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,15,17,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .top-bar-logo {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .top-bar-title { font-size: 15px; font-weight: 500; flex: 1; }
+  .user-email { font-size: 11px; color: var(--text3); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logout-btn {
+    font-size: 12px; color: var(--text3);
+    background: none; border: 0.5px solid var(--border2);
+    cursor: pointer; padding: 4px 10px;
+    border-radius: 20px; transition: color 0.2s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .logout-btn:hover { color: var(--text2); }
+
+  .search-wrap { padding: 1rem; }
+  .search-box {
+    display: flex; gap: 8px; align-items: center;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--accent); }
+  .search-icon { font-size: 16px; flex-shrink: 0; color: var(--text3); }
+  .search-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-size: 15px;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .search-input::placeholder { color: var(--text3); }
+  .clear-btn {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; font-size: 18px; line-height: 1;
+    padding: 0 2px; display: none;
+  }
+  .clear-btn.show { display: block; }
+
+  .tab-bar {
+    display: flex;
+    padding: 0 1rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px; font-size: 13px; font-weight: 500;
+    color: var(--text3); border: none; background: none;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px; transition: color 0.2s, border-color 0.2s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  .results { padding: 0.75rem 1rem 6rem; }
+  .result-count { font-size: 12px; color: var(--text3); margin-bottom: 0.75rem; }
+
+  .phone-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    animation: fadeUp 0.25s ease both;
+  }
+  .phone-card:hover { border-color: var(--border2); background: var(--surface2); }
+  .phone-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .phone-name { font-size: 14px; font-weight: 500; line-height: 1.4; flex: 1; padding-right: 8px; }
+  .brand-badge {
+    font-size: 10px; font-weight: 500; padding: 3px 8px;
+    border-radius: 20px; flex-shrink: 0;
+    background: rgba(79,127,255,0.15); color: var(--accent2);
+  }
+  .phone-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .stat-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .stat-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+  .stat-value { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .stat-value.price { color: var(--warning); }
+  .stat-value.ins { color: var(--success); }
+  .view-plans-btn {
+    margin-top: 10px; width: 100%; padding: 8px;
+    background: rgba(79,127,255,0.1);
+    border: 0.5px solid rgba(79,127,255,0.3);
+    border-radius: var(--radius-sm);
+    color: var(--accent2); font-size: 12px; font-weight: 500;
+    cursor: pointer; text-align: center;
+    transition: background 0.2s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .view-plans-btn:hover { background: rgba(79,127,255,0.18); }
+
+  .empty-state {
+    text-align: center; padding: 4rem 2rem;
+    color: var(--text3); font-size: 14px; line-height: 2;
+    display: none;
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 0.5rem; }
+  .loading { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; display: none; }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    display: none; align-items: flex-end;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    width: 100%; max-height: 85vh;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    border-top: 0.5px solid var(--border2);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex; flex-direction: column;
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border2); border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .modal-header {
+    padding: 1rem 3rem 0.75rem 1rem;
+    border-bottom: 0.5px solid var(--border);
+    position: relative;
+  }
+  .modal-phone-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .modal-phone-sub { font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+  .modal-info-bar {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; margin-top: 10px;
+  }
+  .modal-info-item {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+  }
+  .modal-info-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+  .modal-info-value {
+    font-size: 13px; font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+  .modal-info-value.price { color: var(--warning); }
+  .modal-info-value.ins { color: var(--success); }
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: var(--surface2); border: none;
+    width: 28px; height: 28px; border-radius: 50%;
+    color: var(--text2); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-body { overflow-y: auto; padding: 0.75rem 1rem 2rem; flex: 1; }
+  .plan-group-card {
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .plan-group-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(79,127,255,0.12);
+    border-bottom: 0.5px solid var(--border2);
+  }
+  .plan-group-fee {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--accent2);
+  }
+  .plan-group-count {
+    font-size: 10px; color: var(--text2);
+    background: rgba(255,255,255,0.07);
+    padding: 2px 7px; border-radius: 20px;
+  }
+  .plan-row {
+    display: flex; align-items: center;
+    padding: 9px 12px;
+    border-bottom: 0.5px solid var(--border);
+    gap: 8px;
+  }
+  .plan-row:last-child { border-bottom: none; }
+  .plan-info { flex: 1; }
+  .plan-name-text { font-size: 13px; font-weight: 500; color: var(--text); }
+  .plan-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .plan-price-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px; font-weight: 500;
+    color: var(--warning);
+  }
+  .plan-months {
+    font-size: 10px; background: rgba(255,255,255,0.07);
+    color: var(--text); padding: 3px 7px;
+    border-radius: 20px; flex-shrink: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  @media (min-width: 640px) {
+    .modal { max-width: 480px; margin: auto; border-radius: 20px; }
+    .modal-backdrop { align-items: center; justify-content: center; }
+    .top-bar, .search-wrap, .results, .tab-bar { max-width: 640px; margin-left: auto; margin-right: auto; }
+  }
+</style>
 </head>
 <body>
-  <h1>手機價格查詢</h1>
-  <input id="search" placeholder="輸入關鍵字...（品名、料號、品牌、專案）" />
-  <table id="results">
-    <thead>
-      <tr>
-        <th>料號</th>
-        <th>品名</th>
-        <th>品牌</th>
-        <th>專案</th>
-        <th>上架日</th>
-        <th>下架日</th>
-        <th>是否搭專案</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
 
-  <script>
-    let db;
-    // 初始化 SQL.js
-    initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` })
-      .then(SQL => fetch('mobile_price_changes.db')
-        .then(res => res.arrayBuffer())
-        .then(buf => { db = new SQL.Database(new Uint8Array(buf)); })
-      );
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">📱</div>
+    <div class="login-title">手機方案查詢</div>
+    <div class="login-sub">請登入以繼續使用</div>
+    <div class="field-label">電子郵件</div>
+    <input class="field-input" type="email" id="email-input" placeholder="your@email.com" autocomplete="email">
+    <div class="field-label">密碼</div>
+    <input class="field-input" type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password">
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      <div class="spinner" id="spinner"></div>
+      <span id="login-text">登入</span>
+    </button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 
-    document.getElementById('search').addEventListener('input', function(e) {
-      const kw = e.target.value.trim().toLowerCase();
-      const tbody = document.querySelector('#results tbody');
-      tbody.innerHTML = '';
-      if (!db || !kw) return;
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-logo">📱</div>
+    <div class="top-bar-title">手機方案查詢</div>
+    <div class="user-email" id="user-email"></div>
+    <button class="logout-btn" onclick="doLogout()">登出</button>
+  </div>
 
-      const stmt = db.prepare(`
-        SELECT p.sku, p.name AS product_name, b.name AS brand_name, pr.name AS project_name,
-               pc.start_date, pc.end_date, pc.has_plan
-        FROM price_changes AS pc
-        JOIN products AS p ON pc.product_id = p.product_id
-        JOIN brands AS b ON p.brand_id = b.brand_id
-        JOIN projects AS pr ON pc.project_id = pr.project_id
-        WHERE lower(p.name) LIKE $kw
-           OR lower(p.sku) LIKE $kw
-           OR lower(b.name) LIKE $kw
-           OR lower(pr.name) LIKE $kw
-      `);
-      stmt.bind({ $kw: '%' + kw + '%' });
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" type="text" placeholder="輸入手機型號，例如 iPhone 15">
+      <button class="clear-btn" id="clear-btn" onclick="clearSearch()">✕</button>
+    </div>
+  </div>
 
-      while (stmt.step()) {
-        const row = stmt.getAsObject();
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${row.sku}</td>
-          <td>${row.product_name}</td>
-          <td>${row.brand_name}</td>
-          <td>${row.project_name}</td>
-          <td>${row.start_date}</td>
-          <td>${row.end_date || ''}</td>
-          <td>${row.has_plan ? 'Y' : 'N'}</td>
-        `;
-        tbody.appendChild(tr);
+  <div class="tab-bar">
+    <button class="tab active" id="tab-model" onclick="switchTab('model')">依手機查詢</button>
+    <button class="tab" id="tab-project" onclick="switchTab('project')">依專案查詢</button>
+  </div>
+
+  <div class="results">
+    <div class="loading" id="loading">查詢中...</div>
+    <div class="empty-state" id="empty-state">
+      <div class="icon">🔍</div>
+      輸入關鍵字開始查詢<br>
+      <span style="font-size:12px">例如：iPhone 15、Samsung S24</span>
+    </div>
+    <div class="result-count" id="result-count" style="display:none"></div>
+    <div id="results-list"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-phone-name" id="modal-phone-name"></div>
+      <div class="modal-phone-sub" id="modal-phone-sub"></div>
+      <div class="modal-info-bar" id="modal-info-bar"></div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://fvsbucfxtpcdqedyjcik.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2c2J1Y2Z4dHBjZHFlZHlqY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNjgyODEsImV4cCI6MjA4OTY0NDI4MX0.gJVMBCciujLnAqnAbc4L8wKyXKNP1iC6-s_ohTT8OKE";
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentTab = 'model';
+
+// ── AUTH ──
+async function doLogin() {
+  const email = document.getElementById('email-input').value.trim();
+  const pw = document.getElementById('pw-input').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  const spinner = document.getElementById('spinner');
+  const loginText = document.getElementById('login-text');
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  loginText.textContent = '登入中...';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+
+  btn.disabled = false;
+  spinner.style.display = 'none';
+  loginText.textContent = '登入';
+
+  if (error) {
+    errEl.style.display = 'block';
+    errEl.textContent = '帳號或密碼錯誤，請再試一次';
+    return;
+  }
+  showApp(data.user.email);
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('email-input').value = '';
+  document.getElementById('pw-input').value = '';
+  clearSearch();
+}
+
+function showApp(email) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-email').textContent = email;
+  showEmpty();
+}
+
+// Auto restore session
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) showApp(session.user.email);
+});
+
+// Enter key on login
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('email-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pw-input').focus(); });
+
+// ── TAB ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-model').classList.toggle('active', tab === 'model');
+  document.getElementById('tab-project').classList.toggle('active', tab === 'project');
+  document.getElementById('search-input').placeholder = tab === 'model'
+    ? '輸入手機型號，例如 iPhone 15'
+    : '輸入專案名稱，例如 學生專案';
+  document.getElementById('search-input').value = '';
+  document.getElementById('clear-btn').classList.remove('show');
+  showEmpty();
+}
+
+// ── SEARCH ──
+let debounceTimer;
+document.getElementById('search-input').addEventListener('input', function () {
+  const val = this.value.trim();
+  document.getElementById('clear-btn').classList.toggle('show', val.length > 0);
+  clearTimeout(debounceTimer);
+  if (!val) { showEmpty(); return; }
+  debounceTimer = setTimeout(() => doSearch(val), 400);
+});
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('clear-btn').classList.remove('show');
+  showEmpty();
+}
+
+function showEmpty() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('result-count').style.display = 'none';
+  document.getElementById('results-list').innerHTML = '';
+}
+
+// 把使用者輸入轉成萬用字元查詢
+// 例如：iphone 15 128 → %iphone%15%128%
+function toPattern(keyword) {
+  return '%' + keyword.trim()
+    .replace(/[\s\-\_\.\/]+/g, '%')  // 空格、底線、連字號等都轉成 %
+    .replace(/g$/i, 'G')             // 結尾 g 統一轉大寫 G
+    + '%';
+}
+
+async function doSearch(keyword) {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('result-count').style.display = 'none';
+
+  const pattern = toPattern(keyword);
+
+  try {
+    let phones = [];
+    if (currentTab === 'model') {
+      const { data } = await sb.from('phones')
+        .select('*')
+        .ilike('model', pattern)
+        .order('brand').order('model')
+        .limit(50);
+      phones = data || [];
+    } else {
+      const { data: prices } = await sb.from('phone_prices')
+        .select('code')
+        .ilike('project_name', pattern)
+        .limit(300);
+      const codes = [...new Set((prices || []).map(p => p.code))];
+      if (!codes.length) { renderEmptyState('no-result'); return; }
+      const { data } = await sb.from('phones')
+        .select('*')
+        .in('code', codes)
+        .order('brand').order('model')
+        .limit(50);
+      phones = data || [];
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    if (!phones.length) { renderEmptyState('no-result'); return; }
+    document.getElementById('result-count').style.display = 'block';
+    document.getElementById('result-count').textContent = `找到 ${phones.length} 筆結果`;
+    renderPhones(phones);
+  } catch (e) {
+    document.getElementById('loading').style.display = 'none';
+    renderEmptyState('error');
+  }
+}
+
+function renderEmptyState(type) {
+  document.getElementById('loading').style.display = 'none';
+  const el = document.getElementById('empty-state');
+  el.style.display = 'block';
+  el.innerHTML = type === 'no-result'
+    ? '<div class="icon">😔</div>找不到相關結果<br><span style="font-size:12px">請嘗試其他關鍵字</span>'
+    : '<div class="icon">⚠️</div>查詢發生錯誤<br><span style="font-size:12px">請確認網路連線</span>';
+}
+
+function fmt(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  return Number(n).toLocaleString();
+}
+
+function renderPhones(phones) {
+  const list = document.getElementById('results-list');
+  list.innerHTML = phones.map((p, i) => `
+    <div class="phone-card" style="animation-delay:${i * 0.04}s">
+      <div class="phone-card-header">
+        <div class="phone-name">${p.model}</div>
+        <div class="brand-badge">${p.brand || ''}</div>
+      </div>
+      <div class="phone-stats">
+        <div class="stat-item">
+          <div class="stat-label">單機價</div>
+          <div class="stat-value price">${fmt(p.unit_price)}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">保險月繳</div>
+          <div class="stat-value ins">${fmt(p.insurance_monthly)}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">保險年繳</div>
+          <div class="stat-value ins">${fmt(p.insurance_annual)}</div>
+        </div>
+      </div>
+      <button class="view-plans-btn" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+        查看所有專案價格 ↗
+      </button>
+    </div>
+  `).join('');
+}
+
+// ── MODAL ──
+async function openModal(phone) {
+  const code = phone.code;
+  document.getElementById('modal-phone-name').textContent = phone.model;
+  document.getElementById('modal-phone-sub').textContent = '載入中...';
+  document.getElementById('modal-info-bar').innerHTML = `
+    <div class="modal-info-item">
+      <div class="modal-info-label">空機價</div>
+      <div class="modal-info-value price">${fmt(phone.unit_price)}</div>
+    </div>
+    <div class="modal-info-item">
+      <div class="modal-info-label">保險月繳</div>
+      <div class="modal-info-value ins">${fmt(phone.insurance_monthly)}</div>
+    </div>
+    <div class="modal-info-item">
+      <div class="modal-info-label">保險年繳</div>
+      <div class="modal-info-value ins">${fmt(phone.insurance_annual)}</div>
+    </div>
+  `;
+  document.getElementById('modal-body').innerHTML =
+    '<div style="padding:2rem;text-align:center;color:var(--text3);font-size:13px">載入中...</div>';
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const { data: prices } = await sb.from('phone_prices')
+      .select('*')
+      .eq('code', code)
+      .order('contract_months')
+      .order('project_name')
+      .order('plan_name')
+      .limit(300);
+
+    document.getElementById('modal-phone-sub').textContent = `共 ${(prices||[]).length} 筆專案價格`;
+
+    if (!prices || !prices.length) {
+      document.getElementById('modal-body').innerHTML =
+        '<div style="padding:2rem;text-align:center;color:var(--text3)">此手機暫無專案資料</div>';
+      return;
+    }
+
+    // 從 plan_name 抓所有數字，找第一個落在 100~9000 之間的（月租費範圍）
+    function getPriceBand(planName) {
+      const matches = String(planName).match(/\d+/g);
+      if (!matches) return 9999;
+      for (const m of matches) {
+        const n = parseInt(m);
+        if (n >= 100 && n <= 9000) return Math.floor(n / 100) * 100;
       }
-      stmt.free();
+      return 9999;
+    }
+
+    function bandLabel(band) {
+      if (band === 9999) return '其他方案';
+      return `${band + 1} ~ ${band + 99} 月租區間`;
+    }
+
+    const bands = {};
+    prices.forEach(p => {
+      const band = getPriceBand(p.plan_name);
+      if (!bands[band]) bands[band] = [];
+      bands[band].push(p);
     });
-  </script>
+
+    const sortedBands = Object.keys(bands).map(Number).sort((a, b) => a - b);
+
+    let html = '';
+    sortedBands.forEach(band => {
+      const rows = bands[band].sort((a, b) => {
+        // 先按專案名稱排（同專案聚在一起）
+        if (a.project_name < b.project_name) return -1;
+        if (a.project_name > b.project_name) return 1;
+        // 同專案再按月租費數字排
+        const na = parseInt(a.plan_name) || 0;
+        const nb = parseInt(b.plan_name) || 0;
+        if (na !== nb) return na - nb;
+        // 同月租費再按期數排
+        return a.contract_months - b.contract_months;
+      });
+      html += `
+        <div class="plan-group-card">
+          <div class="plan-group-header">
+            <span class="plan-group-fee">${bandLabel(band)}</span>
+            <span class="plan-group-count">${rows.length} 個方案</span>
+          </div>`;
+      rows.forEach(r => {
+        const monthsLabel = r.contract_months > 0 ? `${r.contract_months} 個月` : '—';
+        html += `
+          <div class="plan-row">
+            <div class="plan-info">
+              <div class="plan-name-text">${r.project_name}｜${r.plan_name}</div>
+              <div class="plan-meta">${r.plan_group}</div>
+            </div>
+            <div class="plan-months">${monthsLabel}</div>
+            <div class="plan-price-tag">${fmt(r.price)}</div>
+          </div>`;
+      });
+      html += `</div>`;
+    });
+
+    document.getElementById('modal-body').innerHTML = html;
+  } catch (e) {
+    document.getElementById('modal-body').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:var(--text3)">載入失敗</div>';
+  }
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+</script>
 </body>
 </html>
