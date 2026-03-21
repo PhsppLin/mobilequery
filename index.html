@@ -132,6 +132,19 @@
   .logout-btn:hover { color: var(--text2); }
 
   .search-wrap { padding: 1rem; }
+  .search-btns { display: flex; gap: 8px; margin-top: 8px; }
+  .search-btn {
+    flex: 1; padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    font-family: "Noto Sans TC", sans-serif;
+  }
+  .search-btn:active { transform: scale(0.97); }
+  .btn-model { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-project { background: rgba(79,127,255,0.15); color: var(--accent2); }
+  .btn-clear { background: var(--surface2); color: var(--text3); flex: 0 0 60px; }
   .search-box {
     display: flex; gap: 8px; align-items: center;
     background: var(--surface);
@@ -324,10 +337,13 @@
   }
   .proj-band-header {
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px;
+    padding: 12px 14px;
     background: rgba(79,127,255,0.15);
-    border-bottom: 0.5px solid var(--border2);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
   }
+  .proj-band-header:hover { background: rgba(79,127,255,0.22); }
   .proj-band-label {
     font-size: 13px; font-weight: 500; color: var(--accent2); flex: 1;
   }
@@ -336,15 +352,52 @@
     background: rgba(255,255,255,0.07);
     padding: 2px 8px; border-radius: 20px;
   }
+  .proj-chevron {
+    font-size: 11px; color: var(--text3);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .proj-chevron.open { transform: rotate(90deg); }
+  .proj-band-body { display: none; }
+  .proj-band-body.open { display: block; }
+
+  .proj-brand { border-bottom: 0.5px solid var(--border); }
+  .proj-brand:last-child { border-bottom: none; }
+  .proj-brand-header {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 500;
+    color: var(--accent2);
+    padding: 8px 14px;
+    background: rgba(79,127,255,0.07);
+    border-bottom: 0.5px solid var(--border);
+    cursor: pointer; user-select: none;
+    transition: background 0.2s;
+  }
+  .proj-brand-header:hover { background: rgba(79,127,255,0.12); }
+  .proj-brand-header span:first-child { flex: 1; }
   .proj-group { border-bottom: 0.5px solid var(--border); }
   .proj-group:last-child { border-bottom: none; }
   .proj-group-header {
+    display: flex; align-items: center; gap: 8px;
     font-size: 11px; font-weight: 500;
     color: var(--text2);
-    padding: 7px 14px;
+    padding: 8px 14px;
     background: var(--surface2);
     border-bottom: 0.5px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
   }
+  .proj-group-header:hover { background: rgba(255,255,255,0.04); }
+  .proj-group-header span { flex: 1; }
+  .proj-group-chevron {
+    font-size: 10px; color: var(--text3);
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .proj-group-chevron.open { transform: rotate(90deg); }
+  .proj-group-body { display: none; }
+  .proj-group-body.open { display: block; }
+
   .proj-phone-row {
     display: flex; align-items: center; gap: 8px;
     padding: 9px 14px;
@@ -408,22 +461,21 @@
   <div class="search-wrap">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input class="search-input" id="search-input" type="text" placeholder="輸入手機型號，例如 iPhone 15">
-      <button class="clear-btn" id="clear-btn" onclick="clearSearch()">✕</button>
+      <input class="search-input" id="search-input" type="text" placeholder="輸入手機型號或專案關鍵字">
     </div>
-  </div>
-
-  <div class="tab-bar">
-    <button class="tab active" id="tab-model" onclick="switchTab('model')">依手機查詢</button>
-    <button class="tab" id="tab-project" onclick="switchTab('project')">依專案查詢</button>
+    <div class="search-btns">
+      <button class="search-btn btn-model" onclick="triggerSearch('model')">手機搜尋</button>
+      <button class="search-btn btn-project" onclick="triggerSearch('project')">專案搜尋</button>
+      <button class="search-btn btn-clear" onclick="clearSearch()">清除</button>
+    </div>
   </div>
 
   <div class="results">
     <div class="loading" id="loading">查詢中...</div>
     <div class="empty-state" id="empty-state">
       <div class="icon">🔍</div>
-      輸入關鍵字開始查詢<br>
-      <span style="font-size:12px">例如：iPhone 15、Samsung S24</span>
+      輸入關鍵字後按搜尋按鈕<br>
+      <span style="font-size:12px">手機搜尋：iPhone 15、Samsung S24<br>專案搜尋：學生、企客 999、4G飆速</span>
     </div>
     <div class="result-count" id="result-count" style="display:none"></div>
     <div id="results-list"></div>
@@ -508,32 +560,21 @@ sb.auth.getSession().then(({ data: { session } }) => {
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('email-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pw-input').focus(); });
 
-// ── TAB ──
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tab-model').classList.toggle('active', tab === 'model');
-  document.getElementById('tab-project').classList.toggle('active', tab === 'project');
-  document.getElementById('search-input').placeholder = tab === 'model'
-    ? '輸入手機型號，例如 iPhone 15'
-    : '輸入專案名稱，例如 學生專案';
-  document.getElementById('search-input').value = '';
-  document.getElementById('clear-btn').classList.remove('show');
-  showEmpty();
+// ── SEARCH BUTTONS ──
+function triggerSearch(mode) {
+  const keyword = document.getElementById('search-input').value.trim();
+  if (!keyword) { showEmpty(); return; }
+  currentTab = mode;
+  doSearch(keyword);
 }
 
-// ── SEARCH ──
-let debounceTimer;
-document.getElementById('search-input').addEventListener('input', function () {
-  const val = this.value.trim();
-  document.getElementById('clear-btn').classList.toggle('show', val.length > 0);
-  clearTimeout(debounceTimer);
-  if (!val) { showEmpty(); return; }
-  debounceTimer = setTimeout(() => doSearch(val), 400);
+// Enter key triggers model search
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') triggerSearch('model');
 });
 
 function clearSearch() {
   document.getElementById('search-input').value = '';
-  document.getElementById('clear-btn').classList.remove('show');
   showEmpty();
 }
 
@@ -577,25 +618,41 @@ async function doSearch(keyword) {
       renderPhones(phones);
 
     } else {
-      // ── 依專案搜尋：取得符合的 phone_prices 記錄（含手機資料）──
-      const { data: byProject } = await sb.from('phone_prices')
-        .select('*, phones(model, brand, unit_price, insurance_monthly, insurance_annual)')
-        .ilike('project_name', pattern)
-        .limit(500);
-      const { data: byPlan } = await sb.from('phone_prices')
-        .select('*, phones(model, brand, unit_price, insurance_monthly, insurance_annual)')
-        .ilike('plan_name', pattern)
-        .limit(500);
+      // 依專案搜尋：使用 search_text 合併欄位，一次查詢完成
+      // search_text = project_name + ' ' + plan_name，已建立 gin_trgm 索引
+      const keywords = keyword.trim().split(/[\s\-\_]+/).filter(k => k.length > 0);
+      const searchPattern = '%' + keywords.join('%') + '%';
 
-      // 合併去重（以 id 為準）
-      const seen = new Set();
-      const allRecords = [...(byProject || []), ...(byPlan || [])].filter(r => {
-        if (seen.has(r.id)) return false;
-        seen.add(r.id);
-        return r.phones; // 過濾掉沒有對應手機資料的
-      });
+      let allPrices = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const { data } = await sb.from('phone_prices')
+          .select('id, code, project_name, plan_name, plan_group, contract_months, price')
+          .ilike('search_text', searchPattern)
+          .range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        allPrices.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
 
       document.getElementById('loading').style.display = 'none';
+      if (!allPrices.length) { renderEmptyState('no-result'); return; }
+
+      // 抓對應手機資料
+      const codes = [...new Set(allPrices.map(p => p.code))];
+      const { data: phonesData } = await sb.from('phones')
+        .select('code, brand, model, unit_price, insurance_monthly, insurance_annual')
+        .in('code', codes);
+
+      const phoneMap = {};
+      (phonesData || []).forEach(p => { phoneMap[p.code] = p; });
+
+      const allRecords = allPrices
+        .filter(r => phoneMap[r.code])
+        .map(r => ({ ...r, phones: phoneMap[r.code] }));
+
       if (!allRecords.length) { renderEmptyState('no-result'); return; }
       document.getElementById('result-count').style.display = 'block';
       document.getElementById('result-count').textContent = `找到 ${allRecords.length} 筆方案資料`;
@@ -621,11 +678,18 @@ function fmt(n) {
   return Number(n).toLocaleString();
 }
 
+// 去除手機型號中的顏色標記，例如 -(黑)(5G) → (5G)，-(Silver) → ''
+function stripColor(model) {
+  return model
+    .replace(/-\([^)]*[\u4e00-\u9fff][^)]*\)/g, '')  // 去除含中文字的括號顏色，如-(黑)
+    .replace(/-\([A-Za-z]+\)(?=\(|$)/g, '')           // 去除英文顏色如-(Silver)
+    .trim();
+}
+
 // ── 依專案搜尋結果渲染 ──
 function renderByProject(records) {
   const list = document.getElementById('results-list');
 
-  // 取百元區間
   function getPriceBand(planName) {
     const matches = String(planName).match(/\d+/g);
     if (!matches) return 9999;
@@ -640,70 +704,172 @@ function renderByProject(records) {
     return `${band + 1} ~ ${band + 99} 月租區間`;
   }
 
-  // 三層分組：費率區間 → 專案+期數 → 手機列表
+  // 五層分組：月租區間 → 專案+費率 → 合約期數 → 品牌 → 手機（去色去重）
   const bands = {};
   records.forEach(r => {
     const band = getPriceBand(r.plan_name);
-    const groupKey = `${r.project_name}｜${r.contract_months > 0 ? r.contract_months + '個月' : r.plan_name}`;
+    const months = r.contract_months > 0 ? r.contract_months : 0;
+    const brand = r.phones.brand || '其他';
+
+    // 專案+費率標籤
+    const feeMatch = String(r.plan_name).match(/\d+/g);
+    let feeNum = '';
+    if (feeMatch) {
+      for (const m of feeMatch) {
+        const n = parseInt(m);
+        if (n >= 100 && n <= 9000) { feeNum = n; break; }
+      }
+    }
+    const projFeeKey = `${r.project_name}｜${feeNum || r.plan_name}`;
+
+    const modelClean = stripColor(r.phones.model);
+    const dedupKey = `${modelClean}||${r.project_name}||${r.plan_name}`;
+
     if (!bands[band]) bands[band] = {};
-    if (!bands[band][groupKey]) bands[band][groupKey] = [];
-    bands[band][groupKey].push(r);
+    if (!bands[band][projFeeKey]) bands[band][projFeeKey] = {};
+    if (!bands[band][projFeeKey][months]) bands[band][projFeeKey][months] = {};
+    if (!bands[band][projFeeKey][months][brand]) bands[band][projFeeKey][months][brand] = new Map();
+    if (!bands[band][projFeeKey][months][brand].has(dedupKey)) {
+      bands[band][projFeeKey][months][brand].set(dedupKey, { ...r, modelClean, feeNum });
+    }
   });
 
   const sortedBands = Object.keys(bands).map(Number).sort((a, b) => a - b);
 
   let html = '';
   sortedBands.forEach((band, bi) => {
-    const groups = bands[band];
-    const sortedGroups = Object.keys(groups).sort();
-    let groupsHtml = '';
+    const projMap = bands[band];
+    const sortedProjs = Object.keys(projMap).sort();
+    const totalCount = sortedProjs.reduce((s, pk) =>
+      s + Object.values(projMap[pk]).reduce((s2, mo) =>
+        s2 + Object.values(mo).reduce((s3, m) => s3 + m.size, 0), 0), 0);
+    const bandId = `band-${bi}`;
 
-    sortedGroups.forEach(groupKey => {
-      const rows = groups[groupKey].sort((a, b) => {
-        if (a.phones.model < b.phones.model) return -1;
-        if (a.phones.model > b.phones.model) return 1;
-        return 0;
+    let projsHtml = '';
+    sortedProjs.forEach((projFeeKey, pi) => {
+      const monthsMap = projMap[projFeeKey];
+      const sortedMonths = Object.keys(monthsMap).map(Number).sort((a, b) => a - b);
+      const projCount = sortedMonths.reduce((s, mo) =>
+        Object.values(monthsMap[mo]).reduce((s2, m) => s2 + m.size, 0) + s, 0);
+      const projId = `proj-${bi}-${pi}`;
+
+      let monthsHtml = '';
+      sortedMonths.forEach((months, mi) => {
+        const brandMap = monthsMap[months];
+        const sortedBrands = Object.keys(brandMap).sort();
+        const monthsCount = sortedBrands.reduce((s, b) => s + brandMap[b].size, 0);
+        const monthsId = `months-${bi}-${pi}-${mi}`;
+        const monthsLabel = months > 0 ? `${months} 個月` : '不限期';
+
+        let brandsHtml = '';
+        sortedBrands.forEach((brand, bri) => {
+          const rows = [...brandMap[brand].values()]
+            .sort((a, b) => (a.phones.unit_price || 0) - (b.phones.unit_price || 0));
+          const brandId = `brand-${bi}-${pi}-${mi}-${bri}`;
+
+          const phonesHtml = rows.map(r => `
+            <div class="proj-phone-row">
+              <div class="proj-phone-info">
+                <div class="proj-phone-name">${r.modelClean}</div>
+                <div class="proj-phone-meta">
+                  空機 <span class="proj-val-price">${fmt(r.phones.unit_price)}</span>
+                  &nbsp;保險 <span class="proj-val-ins">${fmt(r.phones.insurance_monthly)}</span>
+                  &nbsp;<span style="color:var(--text2)">${r.project_name}｜${r.feeNum || r.plan_name}｜${monthsLabel}</span>
+                </div>
+              </div>
+              <div class="proj-plan-price">${fmt(r.price)}</div>
+            </div>`).join('');
+
+          brandsHtml += `
+            <div class="proj-brand">
+              <div class="proj-brand-header" onclick="toggleBrand('${brandId}')">
+                <span>${brand}</span>
+                <span style="font-size:10px;color:var(--text3)">${rows.length} 支</span>
+                <span class="proj-group-chevron" id="gc-${brandId}">▶</span>
+              </div>
+              <div class="proj-group-body" id="${brandId}">
+                ${phonesHtml}
+              </div>
+            </div>`;
+        });
+
+        monthsHtml += `
+          <div class="proj-group">
+            <div class="proj-group-header" onclick="toggleGroup('${monthsId}')">
+              <span>${monthsLabel}</span>
+              <span style="font-size:10px;color:var(--text3)">${monthsCount} 支</span>
+              <span class="proj-group-chevron" id="gc-${monthsId}">▶</span>
+            </div>
+            <div class="proj-group-body" id="${monthsId}">
+              ${brandsHtml}
+            </div>
+          </div>`;
       });
 
-      const phonesHtml = rows.map(r => `
-        <div class="proj-phone-row">
-          <div class="proj-phone-info">
-            <div class="proj-phone-name">${r.phones.model}</div>
-            <div class="proj-phone-meta">
-              空機 <span class="proj-val-price">${fmt(r.phones.unit_price)}</span>
-              &nbsp;保險 <span class="proj-val-ins">${fmt(r.phones.insurance_monthly)}</span>
-            </div>
-          </div>
-          <div class="proj-plan-price">${fmt(r.price)}</div>
-        </div>
-      `).join('');
-
-      groupsHtml += `
+      projsHtml += `
         <div class="proj-group">
-          <div class="proj-group-header">${groupKey}</div>
-          ${phonesHtml}
+          <div class="proj-group-header" onclick="toggleGroup('${projId}')" style="background:rgba(79,127,255,0.07);color:var(--accent2);">
+            <span>${projFeeKey}</span>
+            <span style="font-size:10px;color:var(--text3)">${projCount} 支</span>
+            <span class="proj-group-chevron" id="gc-${projId}">▶</span>
+          </div>
+          <div class="proj-group-body" id="${projId}">
+            ${monthsHtml}
+          </div>
         </div>`;
     });
 
     html += `
       <div class="proj-band-card" style="animation-delay:${bi * 0.06}s">
-        <div class="proj-band-header">
+        <div class="proj-band-header" onclick="toggleBand('${bandId}')">
           <span class="proj-band-label">${bandLabel(band)}</span>
-          <span class="proj-band-count">${Object.values(groups).reduce((s,g) => s+g.length, 0)} 筆</span>
+          <span class="proj-band-count">${totalCount} 支</span>
+          <span class="proj-chevron" id="bc-${bandId}">▶</span>
         </div>
-        ${groupsHtml}
+        <div class="proj-band-body" id="${bandId}">
+          ${projsHtml}
+        </div>
       </div>`;
   });
 
   list.innerHTML = html;
 }
 
+function toggleBand(id) {
+  const body = document.getElementById(id);
+  const chevron = document.getElementById('bc-' + id);
+  const isOpen = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+}
+
+function toggleBrand(id) {
+  const body = document.getElementById(id);
+  const chevron = document.getElementById('gc-' + id);
+  const isOpen = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+}
+
+function toggleGroup(id) {
+  const body = document.getElementById(id);
+  const chevron = document.getElementById('gc-' + id);
+  const isOpen = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+}
+
 function renderPhones(phones) {
+  // 依去色後型號去重，同款不同顏色只顯示一筆
+  const seen = new Map();
+  phones.forEach(p => {
+    const key = stripColor(p.model) + '||' + (p.brand || '');
+    if (!seen.has(key)) seen.set(key, { ...p, modelClean: stripColor(p.model) });
+  });
+  const unique = [...seen.values()];
+
   const list = document.getElementById('results-list');
-  list.innerHTML = phones.map((p, i) => `
+  list.innerHTML = unique.map((p, i) => `
     <div class="phone-card" style="animation-delay:${i * 0.04}s">
       <div class="phone-card-header">
-        <div class="phone-name">${p.model}</div>
+        <div class="phone-name">${p.modelClean}</div>
         <div class="brand-badge">${p.brand || ''}</div>
       </div>
       <div class="phone-stats">
