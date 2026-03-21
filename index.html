@@ -435,12 +435,14 @@ async function doLogin() {
 }
 
 async function doLogout() {
-  await sb.auth.signOut();
+  // 先立即跳回登入頁，不等伺服器
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('email-input').value = '';
   document.getElementById('pw-input').value = '';
   clearSearch();
+  // 背景再通知伺服器（不影響使用者體驗）
+  sb.auth.signOut();
 }
 
 function showApp(email) {
