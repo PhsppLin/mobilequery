@@ -313,7 +313,54 @@
     border-radius: 20px; flex-shrink: 0;
   }
 
-  @keyframes fadeUp {
+  /* ── 依專案搜尋版面 ── */
+  .proj-band-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    animation: fadeUp 0.25s ease both;
+  }
+  .proj-band-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: rgba(79,127,255,0.15);
+    border-bottom: 0.5px solid var(--border2);
+  }
+  .proj-band-label {
+    font-size: 13px; font-weight: 500; color: var(--accent2); flex: 1;
+  }
+  .proj-band-count {
+    font-size: 10px; color: var(--text2);
+    background: rgba(255,255,255,0.07);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .proj-group { border-bottom: 0.5px solid var(--border); }
+  .proj-group:last-child { border-bottom: none; }
+  .proj-group-header {
+    font-size: 11px; font-weight: 500;
+    color: var(--text2);
+    padding: 7px 14px;
+    background: var(--surface2);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .proj-phone-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .proj-phone-row:last-child { border-bottom: none; }
+  .proj-phone-info { flex: 1; }
+  .proj-phone-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .proj-phone-meta { font-size: 11px; color: var(--text3); }
+  .proj-val-price { color: var(--warning); font-family: 'DM Mono', monospace; }
+  .proj-val-ins { color: var(--success); font-family: 'DM Mono', monospace; }
+  .proj-plan-price {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px; font-weight: 500;
+    color: var(--warning); flex-shrink: 0;
+  }
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
@@ -515,34 +562,45 @@ async function doSearch(keyword) {
   const pattern = toPattern(keyword);
 
   try {
-    let phones = [];
     if (currentTab === 'model') {
+      // ── 依手機搜尋：回傳手機清單 ──
       const { data } = await sb.from('phones')
         .select('*')
         .ilike('model', pattern)
         .order('brand').order('model')
         .limit(50);
-      phones = data || [];
-    } else {
-      const { data: prices } = await sb.from('phone_prices')
-        .select('code')
-        .ilike('project_name', pattern)
-        .limit(300);
-      const codes = [...new Set((prices || []).map(p => p.code))];
-      if (!codes.length) { renderEmptyState('no-result'); return; }
-      const { data } = await sb.from('phones')
-        .select('*')
-        .in('code', codes)
-        .order('brand').order('model')
-        .limit(50);
-      phones = data || [];
-    }
+      const phones = data || [];
+      document.getElementById('loading').style.display = 'none';
+      if (!phones.length) { renderEmptyState('no-result'); return; }
+      document.getElementById('result-count').style.display = 'block';
+      document.getElementById('result-count').textContent = `找到 ${phones.length} 支手機`;
+      renderPhones(phones);
 
-    document.getElementById('loading').style.display = 'none';
-    if (!phones.length) { renderEmptyState('no-result'); return; }
-    document.getElementById('result-count').style.display = 'block';
-    document.getElementById('result-count').textContent = `找到 ${phones.length} 筆結果`;
-    renderPhones(phones);
+    } else {
+      // ── 依專案搜尋：取得符合的 phone_prices 記錄（含手機資料）──
+      const { data: byProject } = await sb.from('phone_prices')
+        .select('*, phones(model, brand, unit_price, insurance_monthly, insurance_annual)')
+        .ilike('project_name', pattern)
+        .limit(500);
+      const { data: byPlan } = await sb.from('phone_prices')
+        .select('*, phones(model, brand, unit_price, insurance_monthly, insurance_annual)')
+        .ilike('plan_name', pattern)
+        .limit(500);
+
+      // 合併去重（以 id 為準）
+      const seen = new Set();
+      const allRecords = [...(byProject || []), ...(byPlan || [])].filter(r => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return r.phones; // 過濾掉沒有對應手機資料的
+      });
+
+      document.getElementById('loading').style.display = 'none';
+      if (!allRecords.length) { renderEmptyState('no-result'); return; }
+      document.getElementById('result-count').style.display = 'block';
+      document.getElementById('result-count').textContent = `找到 ${allRecords.length} 筆方案資料`;
+      renderByProject(allRecords);
+    }
   } catch (e) {
     document.getElementById('loading').style.display = 'none';
     renderEmptyState('error');
@@ -561,6 +619,83 @@ function renderEmptyState(type) {
 function fmt(n) {
   if (n === null || n === undefined || n === '') return '—';
   return Number(n).toLocaleString();
+}
+
+// ── 依專案搜尋結果渲染 ──
+function renderByProject(records) {
+  const list = document.getElementById('results-list');
+
+  // 取百元區間
+  function getPriceBand(planName) {
+    const matches = String(planName).match(/\d+/g);
+    if (!matches) return 9999;
+    for (const m of matches) {
+      const n = parseInt(m);
+      if (n >= 100 && n <= 9000) return Math.floor(n / 100) * 100;
+    }
+    return 9999;
+  }
+  function bandLabel(band) {
+    if (band === 9999) return '其他方案';
+    return `${band + 1} ~ ${band + 99} 月租區間`;
+  }
+
+  // 三層分組：費率區間 → 專案+期數 → 手機列表
+  const bands = {};
+  records.forEach(r => {
+    const band = getPriceBand(r.plan_name);
+    const groupKey = `${r.project_name}｜${r.contract_months > 0 ? r.contract_months + '個月' : r.plan_name}`;
+    if (!bands[band]) bands[band] = {};
+    if (!bands[band][groupKey]) bands[band][groupKey] = [];
+    bands[band][groupKey].push(r);
+  });
+
+  const sortedBands = Object.keys(bands).map(Number).sort((a, b) => a - b);
+
+  let html = '';
+  sortedBands.forEach((band, bi) => {
+    const groups = bands[band];
+    const sortedGroups = Object.keys(groups).sort();
+    let groupsHtml = '';
+
+    sortedGroups.forEach(groupKey => {
+      const rows = groups[groupKey].sort((a, b) => {
+        if (a.phones.model < b.phones.model) return -1;
+        if (a.phones.model > b.phones.model) return 1;
+        return 0;
+      });
+
+      const phonesHtml = rows.map(r => `
+        <div class="proj-phone-row">
+          <div class="proj-phone-info">
+            <div class="proj-phone-name">${r.phones.model}</div>
+            <div class="proj-phone-meta">
+              空機 <span class="proj-val-price">${fmt(r.phones.unit_price)}</span>
+              &nbsp;保險 <span class="proj-val-ins">${fmt(r.phones.insurance_monthly)}</span>
+            </div>
+          </div>
+          <div class="proj-plan-price">${fmt(r.price)}</div>
+        </div>
+      `).join('');
+
+      groupsHtml += `
+        <div class="proj-group">
+          <div class="proj-group-header">${groupKey}</div>
+          ${phonesHtml}
+        </div>`;
+    });
+
+    html += `
+      <div class="proj-band-card" style="animation-delay:${bi * 0.06}s">
+        <div class="proj-band-header">
+          <span class="proj-band-label">${bandLabel(band)}</span>
+          <span class="proj-band-count">${Object.values(groups).reduce((s,g) => s+g.length, 0)} 筆</span>
+        </div>
+        ${groupsHtml}
+      </div>`;
+  });
+
+  list.innerHTML = html;
 }
 
 function renderPhones(phones) {
