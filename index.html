@@ -432,10 +432,75 @@
     to { transform: translateY(0); }
   }
 
-  @media (min-width: 640px) {
-    .modal { max-width: 480px; margin: auto; border-radius: 20px; }
+  /* ── 平板 768px ── */
+  @media (min-width: 768px) {
+    body { font-size: 16px; }
+
+    .top-bar { padding: 0.9rem 2rem; }
+    .top-bar-title { font-size: 16px; }
+    .top-bar-logo { width: 34px; height: 34px; font-size: 18px; }
+
+    .search-wrap { padding: 1.25rem 2rem; }
+    .search-input { font-size: 16px; }
+    .search-btn { font-size: 14px; padding: 11px 12px; }
+
+    .tab-bar { padding: 0 2rem; }
+    .tab { font-size: 14px; padding: 12px 20px; }
+
+    .results { padding: 1rem 2rem 6rem; }
+    .result-count { font-size: 13px; }
+
+    /* 手機卡片兩欄 */
+    #results-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .phone-card { margin-bottom: 0; }
+    .phone-name { font-size: 15px; }
+    .stat-label { font-size: 11px; }
+    .stat-value { font-size: 14px; }
+
+    .modal { max-width: 560px; margin: auto; border-radius: 20px; }
     .modal-backdrop { align-items: center; justify-content: center; }
-    .top-bar, .search-wrap, .results, .tab-bar { max-width: 640px; margin-left: auto; margin-right: auto; }
+    .modal-phone-name { font-size: 17px; }
+    .plan-name-text { font-size: 14px; }
+    .plan-price-tag { font-size: 16px; }
+  }
+
+  /* ── 電腦 1200px ── */
+  @media (min-width: 1200px) {
+    .top-bar { padding: 1rem 3rem; }
+    .top-bar-title { font-size: 17px; }
+
+    .search-wrap { padding: 1.5rem 3rem; }
+    .search-input { font-size: 17px; }
+    .search-box { padding: 12px 18px; }
+
+    .tab-bar { padding: 0 3rem; }
+    .tab { font-size: 15px; padding: 13px 24px; }
+
+    .results { padding: 1.25rem 3rem 6rem; }
+
+    /* 手機卡片三欄 */
+    #results-list { grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .phone-name { font-size: 15px; }
+    .stat-value { font-size: 15px; }
+
+    .modal { max-width: 640px; }
+    .modal-phone-name { font-size: 18px; }
+
+    /* 依專案搜尋：加寬內容區 */
+    .proj-band-label { font-size: 14px; }
+    .proj-phone-name { font-size: 13px; }
+    .proj-plan-price { font-size: 16px; }
+  }
+
+  /* ── 寬螢幕 1600px ── */
+  @media (min-width: 1600px) {
+    .top-bar { padding: 1rem 4rem; }
+    .search-wrap { padding: 1.5rem 4rem; }
+    .tab-bar { padding: 0 4rem; }
+    .results { padding: 1.25rem 4rem 6rem; }
+
+    /* 手機卡片四欄 */
+    #results-list { grid-template-columns: repeat(4, 1fr); gap: 16px; }
   }
 </style>
 </head>
