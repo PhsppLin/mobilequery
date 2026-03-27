@@ -141,7 +141,16 @@
   }
   .logout-btn:hover { color: var(--text2); }
 
-  .search-wrap { padding: 1rem; }
+  .search-wrap {
+    padding: 1rem;
+    position: sticky;
+    top: 53px;
+    z-index: 99;
+    background: rgba(15,15,17,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 0.5px solid var(--border);
+  }
   .search-btns { display: flex; gap: 8px; margin-top: 8px; }
   .search-btn {
     flex: 1; padding: 10px 8px;
@@ -440,7 +449,7 @@
     .top-bar-title { font-size: 16px; }
     .top-bar-logo { width: 34px; height: 34px; font-size: 18px; }
 
-    .search-wrap { padding: 1.25rem 2rem; }
+    .search-wrap { padding: 1.25rem 2rem; top: 57px; }
     .search-input { font-size: 16px; }
     .search-btn { font-size: 14px; padding: 11px 12px; }
 
@@ -469,7 +478,7 @@
     .top-bar { padding: 1rem 3rem; }
     .top-bar-title { font-size: 17px; }
 
-    .search-wrap { padding: 1.5rem 3rem; }
+    .search-wrap { padding: 1.5rem 3rem; top: 61px; }
     .search-input { font-size: 17px; }
     .search-box { padding: 12px 18px; }
 
