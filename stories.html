@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三段故事</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --gold: #c9a84c;
+    --gold-light: #e8d5a3;
+    --red: #8b2020;
+    --muted: #6b5e4e;
+    --divider: rgba(201,168,76,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1410;
+    font-family: 'Noto Serif TC', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 60px 20px;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(139,32,32,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.85rem;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    opacity: 0.7;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+  }
+
+  .story {
+    max-width: 720px;
+    margin: 0 auto 80px;
+    background: var(--paper);
+    position: relative;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .story:nth-child(2) { animation-delay: 0.1s; }
+  .story:nth-child(3) { animation-delay: 0.2s; }
+  .story:nth-child(4) { animation-delay: 0.3s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Ornamental corner marks */
+  .story::before, .story::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    border-color: var(--gold);
+    border-style: solid;
+    opacity: 0.5;
+  }
+  .story::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .story::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .story-header {
+    padding: 40px 48px 28px;
+    border-bottom: 1px solid var(--divider);
+    position: relative;
+  }
+
+  .story-number {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    font-weight: 300;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .story-title {
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+  }
+
+  .story-symbol {
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5rem;
+    opacity: 0.15;
+  }
+
+  .story-body {
+    padding: 36px 48px 40px;
+  }
+
+  .scene {
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .scene:last-child { margin-bottom: 0; }
+
+  .scene-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .scene-divider::before,
+  .scene-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+
+  .scene-icon {
+    font-size: 1rem;
+    color: var(--gold);
+    opacity: 0.6;
+  }
+
+  .scene p {
+    font-size: 0.95rem;
+    line-height: 2;
+    color: #2a2018;
+    font-weight: 300;
+    text-align: justify;
+    text-justify: inter-character;
+  }
+
+  /* Highlight quotes */
+  .highlight {
+    background: linear-gradient(to right, rgba(201,168,76,0.12), rgba(201,168,76,0.05));
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-style: italic;
+    color: var(--red);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  /* Key moment callout */
+  .key-moment {
+    background: #2a1a1a;
+    color: var(--gold-light);
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 0.88rem;
+    line-height: 1.9;
+    letter-spacing: 0.03em;
+    position: relative;
+  }
+
+  .key-moment::before {
+    content: '✦';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--paper);
+    padding: 0 8px;
+    color: var(--gold);
+    font-size: 0.8rem;
+  }
+
+  /* Probability box */
+  .probability {
+    border: 1px solid var(--gold);
+    padding: 24px;
+    margin: 24px 0;
+    text-align: center;
+    background: rgba(201,168,76,0.04);
+  }
+
+  .probability .number {
+    font-size: 1.8rem;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .probability .label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+  }
+
+  .story-footer {
+    padding: 20px 48px;
+    border-top: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .footer-line {
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+
+  .footer-text {
+    font-size: 0.72rem;
+    color: var(--gold);
+    opacity: 0.5;
+    letter-spacing: 0.3em;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+  }
+
+  /* Seal decoration */
+  .seal {
+    width: 48px; height: 48px;
+    border: 2px solid var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    opacity: 0.4;
+    font-size: 1.2rem;
+    color: var(--red);
+    transform: rotate(5deg);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .story-header, .story-body, .story-footer { padding-left: 28px; padding-right: 28px; }
+    .story-symbol { display: none; }
+    .story-title { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<p class="page-title">人生故事 · 三段記述</p>
+
+<!-- ══════════════════════════════════ -->
+<!-- 第一段故事 -->
+<!-- ══════════════════════════════════ -->
+<article class="story">
+  <header class="story-header">
+    <span class="story-number">STORY ONE · 第一段</span>
+    <h2 class="story-title">頭頂的印記</h2>
+    <span class="story-symbol">☯</span>
+  </header>
+
+  <div class="story-body">
+
+    <div class="scene">
+      <p>出生時，頭頂百會穴正中央便帶著一顆圓形的痣。隨著年歲增長，這顆痣也慢慢變大，像一顆珍珠波霸一般。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>後來到臺北醫學院攻讀碩班，同一指導教授門下，有一位腫瘤科主治醫師。因母親擔憂痣的病變，便請這位同學協助檢查。主任看完後說，這是疣的一種，不會病變——但他隨即補了一句，「從靈學的角度，我覺得這是一種與生俱來的印記，你想了解嗎？」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>赴會前夜，做了一個夢。夢中佛教四大金剛，各持法器——塔、傘、琵琶——突然圍攏過來，對著頭頂猛烈敲打。就這樣，被打醒了。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>隔日，主任在辦公室以碼錶毫秒數搭配易經六十四卦占卜，問完後，在紙上寫了一個大大的「頭」字，然後故意寫得很開，看起來像是「豆」與「頁」兩個字，把「豆」圈起來說：</p>
+      <div class="highlight">「四大金剛一直敲你的頭，是要告訴你——頭上的豆，是個印記。去掉頭，剩下的是頁。你有一世，是經書轉世。」</div>
+      <p>傻眼了。怎麼會有非動物類轉世的說法？主任笑說：「佛前燈蕊的故事，你沒聽過嗎？」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>隨後前往龍山寺地藏王菩薩前求籤。用碼錶得出「22號」，擲筊詢問，連得三聖筊。籤詩寫道：</p>
+      <div class="highlight">「碧玉池中開白蓮，莊嚴色相自天然，生來骨格超凡俗，正是人間第一仙。」</div>
+      <p>主任說，前世的經文是心經，這是本命文。帶著一本心經小折，很快便整個背了起來。</p>
+    </div>
+
+    <div class="key-moment">
+      此後那本心經小折一直放在皮夾。每每皮夾不慎遺失，都會有人莫名撿到送往警察局，分文不少。
+    </div>
+
+  </div>
+
+  <footer class="story-footer">
+    <div class="footer-line"></div>
+    <span class="footer-text">印記 · 心經 · 本命文</span>
+    <div class="footer-line"></div>
+    <div class="seal">印</div>
+  </footer>
+</article>
+
+
+<!-- ══════════════════════════════════ -->
+<!-- 第二段故事 -->
+<!-- ══════════════════════════════════ -->
+<article class="story">
+  <header class="story-header">
+    <span class="story-number">STORY TWO · 第二段</span>
+    <h2 class="story-title">來自西藏的訪客</h2>
+    <span class="story-symbol">☸</span>
+  </header>
+
+  <div class="story-body">
+
+    <div class="scene">
+      <p>當兵時擔任人事兵，愛排平日假期，通宵完再去吃早餐，是那時候的生活節奏。某天清晨，一個穿黃色長風衣、裡頭套著汗衫、戴著眼鏡、笑起來露出斷牙的男生走了過來，手掌攤開，裡頭是一把代幣——「可以陪我打幾場電動嗎？」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>坐下來才發現，他根本不會打格鬥遊戲，搖桿跟按鈕像羊癲瘋一樣亂動。只好慢慢放水。幾場後，他說自己是從小在日本長大的華僑，來台灣唸書。然後說起了他的故事：</p>
+      <p style="margin-top:16px;">家境優渥，庭園廣闊，甚至養過老虎。高中時為情跳樓，坐上輪椅。仁波切輔導後仍走不出死結，某日趁家人不注意，推著輪椅衝向防波堤，落海。大難不死，在鬼門關前走了一遭後，才有了不同的體悟。跟著師父回到西藏，開始修行。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>接著，他說師父告訴他，在台灣還有一段尚未了結的緣分——是前輩子的妻子。當下以為遇到詐騙，找了藉口急忙離開。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>打電話給北醫的腫瘤科主任，說了這件事。主任靜默半晌，說：「你遇到的事情是真的。只是很奇怪，連修行的人都不見得會遇到，你怎麼遇上了。」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>下次放假，習慣走高雄火車站前站，那天不知為何，走了後站出口。一出去，他又出現了。</p>
+      <div class="highlight">「我上次有做什麼讓你不開心的事嗎？為什麼你要找人查我？師父要我做好心理準備，說你不一定會接受，但有東西要我轉交給你。」</div>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>他拿出兩個紅色錦囊。第一個裡面是一串手串——瑪瑙、紅玉髓、黑石、綠寶珠，最上方是雪白硨磲，最下方是一顆特別的乾燥果核。</p>
+      <div class="key-moment">「這是一位往生仁波切的指骨，師父特別取了兩節，一串給他，一串給你。」</div>
+      <p>第二個錦囊是師父手繪的唐卡。正準備放進皮夾時，他愣住了，看著皮夾裡那本心經小折：「你怎麼有這個？」</p>
+      <p style="margin-top:16px;">聽完來由後，他說：「那你不需要唐卡了。這張佛經的力量，已經遠比師父手繪的唐卡大得多。」</p>
+    </div>
+
+    <p style="font-size:0.88rem; color:var(--muted); font-style:italic; line-height:1.8;">之後，這個男生就再也沒有出現在生命中。</p>
+
+  </div>
+
+  <footer class="story-footer">
+    <div class="footer-line"></div>
+    <span class="footer-text">緣份 · 指骨 · 心經</span>
+    <div class="footer-line"></div>
+    <div class="seal">緣</div>
+  </footer>
+</article>
+
+
+<!-- ══════════════════════════════════ -->
+<!-- 第三段故事 -->
+<!-- ══════════════════════════════════ -->
+<article class="story">
+  <header class="story-header">
+    <span class="story-number">STORY THREE · 第三段</span>
+    <h2 class="story-title">上天給的妹妹</h2>
+    <span class="story-symbol">🪷</span>
+  </header>
+
+  <div class="story-body">
+
+    <div class="scene">
+      <p>退伍後進入社會，那時智慧型手機還不盛行，頂多是彩色螢幕加Java環境，瀏覽器速度爆慢。那時流行線上聊天室，可以打字、私聊、唱歌。因為喜歡唱歌，在上面待了一陣子，慢慢成了管理員。其中有個女生，話題特別——兩人都對掌紋感到好奇，自己的掌紋非常紊亂，左手甚至有一點斷掌的感覺。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>那女生說認識一位手相面相都很準的師父，兩人便約好一起前往，騎機車載她到高雄火車站附近。先看了自己的手相，師父給了些建議，涉及父執輩的前因後果，只能半信半疑。接下來輪到那個女生坐下，師父看了看她的眼睛，問了一句話：</p>
+      <div class="highlight">「妳結婚了嗎？」</div>
+      <p>兩人都愣了。「還沒。」她說。師父接著說：「妳知道妳身邊跟了三個小孩嗎？」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>師父沒有解釋原因，只是很冷靜地說，她的狀況不應該來這裡，應該先去臨水夫人廟，因為這已經嚴重影響了她的運勢，小孩處理不好，命運會一直衰敗下去。</p>
+      <p style="margin-top:16px;">又說，高雄也有臨水夫人廟，但總廟在台南，與其透過分廟最後又回歸總廟，不如直接去總廟。當天沒有別的事，事不宜遲，趕快前往高雄火車站。拿出那支勉強能上網的手機查了一下——要去永康。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>趕快買最近一班的票，買到了莒光號，號碼是7車25號跟7車27號，票價93元。</p>
+      <div class="highlight">「妳看，剛好是我生日耶——可能在等我跟妳一起處理。」</div>
+      <p>在去程的那一刻，已經讀到了暗示，只是還不知道回程也會一樣。</p>
+    </div>
+
+    <div class="key-moment">
+      莒光號 · 7車25號 · 7車27號 · 票價 93 元
+      那是他的生日——9月3日。
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>一路上女生說出了三個小孩的來歷：一次流產、一次喜歡上有婦之夫被強迫打掉、一次子宮外孕，沒想到也算一個。到了永康，計程車司機疑惑地說，怎麼會跑來永康？應該坐到台南火車站才對啊。司機嘴巴雖然這樣講，還是很順利地把他們送到了目的地。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>在廟裡依照師父吩咐，買了胭脂水粉、三個蓮花座，拜過一媽、二媽、三媽，花公、花婆，以及三十六婆祖。女生在臨水夫人前下跪稟告基本資料，說以前年輕不會想，害得三個小朋友跟在身邊受苦，希望臨水夫人仁慈，讓三個小孩坐著蓮花，跟著夫人修行。</p>
+      <p style="margin-top:16px;">擲了十幾次筊，一個聖筊都沒有。越擲越沒力，到後來都是亂丟的感覺。</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>這時候，心中突然閃過一個念頭——好像要協助這個女生什麼。於是跪在她的身邊，默念那唯一會念的心經，念完後，在心中默想：</p>
+      <div class="highlight">「如果今天臨水夫人可以接走這三個小孩，我一定把這女生當成親妹妹一樣照顧，讓她的人生不要徬徨無助。」</div>
+      <p>做完後轉頭說：「好了，妳再試試。」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>那女生接連擲出了三個聖筊。滿臉不可置信，問剛才講了什麼。說不重要，先趕快把蓮花化了再說。</p>
+      <p style="margin-top:16px;">都處理好後，步行到台南火車站，一路上才說了剛才跟神明許下的承諾。</p>
+      <p style="margin-top:16px;">女生聽完後，臉上閃過一絲不開心：「為什麼只能把我當妹妹看？已經很久沒有人對我好了，難道我們之間就只能當兄妹嗎？」只能回答她：「可能神明覺得這樣是最好的安排吧。」</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>買了最近一班的回程票，這次買到了自強號。拿到票後，愣了一下。女生看到表情有異，問說怎麼了？苦笑地說：「就跟妳說神明都安排好了，妳真的不要不信。」</p>
+    </div>
+
+    <div class="key-moment">
+      自強號 · 7車25號 · 7車27號 · 票價 107 元
+      那是她的生日——10月7日。
+    </div>
+
+    <div class="probability">
+      <span class="number">1 / 828,000,000,000,000</span>
+      <span class="label">來回買到同樣座位 × 票價剛好是兩人生日的機率</span>
+    </div>
+
+    <p style="font-size:0.88rem; color:var(--muted); font-style:italic; line-height:1.8; margin-top:8px;">她看著車票，臉上還是帶著一絲不情願。但這一次，她甘願地接受了這樣的安排。</p>
+
+    <div class="scene">
+      <div class="scene-divider"><span class="scene-icon">◈</span></div>
+      <p>由於是家裡的么子，從來沒有妹妹的經驗。但後來還是幫她找了鑽石銷售的正職，買了筆電，連自己都惡補了鑽石4C的知識，讓她慢慢上了軌道。只是時間久了，換了電話，就這樣失去了聯繫。</p>
+    </div>
+
+  </div>
+
+  <footer class="story-footer">
+    <div class="footer-line"></div>
+    <span class="footer-text">828兆分之一 · 神明的安排</span>
+    <div class="footer-line"></div>
+    <div class="seal">緣</div>
+  </footer>
+</article>
+
+</body>
+</html>
