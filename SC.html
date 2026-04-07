@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>軒展工程管理系統</title>
+<style>
+  :root {
+    --amber: #d97706;
+    --amber-light: #fbbf24;
+    --amber-pale: #fef3c7;
+    --dark: #1c1917;
+    --surface: #292524;
+    --border: #44403c;
+    --text: #fafaf9;
+    --muted: #a8a29e;
+    --white: #ffffff;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --info: #0284c7;
+    --card-bg: #312e2b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 2px solid var(--amber); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 18px; font-weight: 700; color: var(--amber); letter-spacing: 2px; }
+  .header-date { color: var(--muted); font-size: 13px; }
+
+  /* Tabs */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab { padding: 12px 20px; cursor: pointer; color: var(--muted); font-size: 14px; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--amber); border-bottom-color: var(--amber); font-weight: 600; }
+
+  /* Content */
+  .content { padding: 16px; max-width: 1100px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--amber); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+
+  /* Form elements */
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input[type="text"], input[type="date"], input[type="number"], textarea, select {
+    width: 100%; background: var(--dark); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    color: var(--text); font-size: 14px; font-family: inherit; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--amber); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* Buttons */
+  .btn { padding: 9px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: all 0.15s; }
+  .btn-primary { background: var(--amber); color: var(--dark); }
+  .btn-primary:hover { background: var(--amber-light); }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; font-size: 12px; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--surface); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 8px 10px; border-bottom: 1px solid rgba(68,64,60,0.5); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  .td-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .td-center { text-align: center; }
+
+  /* Worker chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+  .chip.on { background: var(--amber); color: var(--dark); border-color: var(--amber); font-weight: 600; }
+  .chip:hover:not(.on) { border-color: var(--amber); color: var(--amber-light); }
+
+  /* Stats */
+  .stat { background: var(--surface); border-radius: 8px; padding: 14px 16px; }
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Tags */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .tag-green { background: rgba(22,163,74,0.15); color: #4ade80; }
+  .tag-red { background: rgba(220,38,38,0.15); color: #f87171; }
+  .tag-amber { background: rgba(217,119,6,0.15); color: var(--amber-light); }
+  .tag-blue { background: rgba(2,132,199,0.15); color: #38bdf8; }
+
+  /* Worker tab selector */
+  .worker-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .w-tab { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.15s; }
+  .w-tab.active { background: var(--amber); color: var(--dark); border-color: var(--amber); font-weight: 600; }
+
+  /* Period selector */
+  .period-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* Input row for expense table */
+  .input-cell { background: var(--dark); border: 1px solid var(--border); border-radius: 4px; padding: 5px 7px; width: 70px; color: var(--text); font-size: 13px; text-align: center; }
+  .input-cell:focus { outline: none; border-color: var(--amber); }
+
+  /* Total row */
+  .total-row td { background: rgba(217,119,6,0.08); font-weight: 600; color: var(--amber-light); }
+
+  /* Alert */
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; }
+  .alert-success { background: rgba(22,163,74,0.12); border: 1px solid rgba(22,163,74,0.3); color: #4ade80; }
+  .alert-info { background: rgba(2,132,199,0.12); border: 1px solid rgba(2,132,199,0.3); color: #38bdf8; }
+
+  .flex-end { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mb-12 { margin-bottom: 12px; }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: 12px; }
+  .text-amber { color: var(--amber-light); }
+  .text-right { text-align: right; }
+  .bold { font-weight: 700; }
+  .w-full { width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">⚡ 軒展工程管理</div>
+    <div class="header-date" id="today-date"></div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-secondary btn-sm" onclick="exportData()">匯出資料</button>
+    <button class="btn btn-secondary btn-sm" onclick="importData()">匯入資料</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('record')">📋 工作紀錄</div>
+  <div class="tab" onclick="switchTab('expense')">💰 工作支出</div>
+  <div class="tab" onclick="switchTab('payroll')">👷 工資管理</div>
+  <div class="tab" onclick="switchTab('summary')">📊 總覽</div>
+</div>
+
+<!-- ==================== 工作紀錄 ==================== -->
+<div class="content">
+<div class="panel active" id="panel-record">
+
+  <div class="card">
+    <div class="card-title">新增工作紀錄</div>
+    <div class="grid-3 mb-12">
+      <div><label>日期</label><input type="date" id="rec-date"></div>
+      <div><label>工地</label><input type="text" id="rec-site" placeholder="工地名稱"></div>
+      <div><label>老闆</label><input type="text" id="rec-boss" placeholder="負責老闆"></div>
+    </div>
+    <div class="mb-12">
+      <label>出席人員（點選）</label>
+      <div class="chips mt-8" id="rec-workers-chips"></div>
+    </div>
+    <div class="mb-12">
+      <label>外調工人數</label>
+      <input type="number" id="rec-external" placeholder="0" style="width:120px;" min="0">
+    </div>
+    <div class="mb-12">
+      <label>工作內容</label>
+      <textarea id="rec-content" placeholder="描述今日工作內容..."></textarea>
+    </div>
+    <div><label>備註</label><input type="text" id="rec-note" placeholder="其他備註"></div>
+    <div class="flex-end mt-12">
+      <button class="btn btn-secondary" onclick="clearRecForm()">清除</button>
+      <button class="btn btn-primary" onclick="saveRecord()">✓ 儲存紀錄</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">工作紀錄列表</div>
+    <div id="rec-filter" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <input type="text" id="rec-search" placeholder="搜尋工地..." style="width:200px;" oninput="renderRecords()">
+    </div>
+    <div class="tbl-wrap">
+      <table id="rec-table">
+        <thead><tr><th>日期</th><th>工地</th><th>老闆</th><th>出席人員</th><th>外調工</th><th>工作內容</th><th>操作</th></tr></thead>
+        <tbody id="rec-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== 工作支出 ==================== -->
+<div class="panel" id="panel-expense">
+
+  <div class="card">
+    <div class="card-title">新增支出紀錄</div>
+    <div class="grid-3 mb-12">
+      <div><label>日期</label><input type="date" id="exp-date" onchange="autoFillFromRecord()"></div>
+      <div><label>工地</label><input type="text" id="exp-site" placeholder="自動帶入或手動填寫"></div>
+      <div>
+        <label>從工作紀錄帶入</label>
+        <select id="exp-rec-select" onchange="fillFromSelectedRecord()">
+          <option value="">-- 選擇紀錄 --</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <label style="margin-bottom:8px;">各職級出勤天數（格填0.5或1）</label>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>老大<br><span class="text-muted text-sm">$4000</span></th>
+            <th>師父<br><span class="text-muted text-sm">$3000</span></th>
+            <th>凱文<br><span class="text-muted text-sm">$3500</span></th>
+            <th>調工<br><span class="text-muted text-sm">$3000</span></th>
+            <th>寶<br><span class="text-muted text-sm">$2800</span></th>
+            <th>偉/福<br><span class="text-muted text-sm">$2500</span></th>
+            <th>學徒23<br><span class="text-muted text-sm">$2300</span></th>
+            <th>學徒22<br><span class="text-muted text-sm">$2200</span></th>
+            <th>學徒20<br><span class="text-muted text-sm">$2000</span></th>
+          </tr></thead>
+          <tbody><tr>
+            <td class="td-center"><input class="input-cell" id="w-0" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-1" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-2" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-3" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-4" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-5" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-6" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-7" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+            <td class="td-center"><input class="input-cell" id="w-8" type="number" min="0" step="0.5" value="0" oninput="calcExpTotal()"></td>
+          </tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-4 mb-12">
+      <div><label>早上涼水 $</label><input type="number" id="exp-water1" value="0" min="0" oninput="calcExpTotal()"></div>
+      <div><label>中午便當涼水 $</label><input type="number" id="exp-lunch" value="0" min="0" oninput="calcExpTotal()"></div>
+      <div><label>下午涼水 $</label><input type="number" id="exp-water2" value="0" min="0" oninput="calcExpTotal()"></div>
+      <div><label>加班 $</label><input type="number" id="exp-ot" value="0" min="0" oninput="calcExpTotal()"></div>
+    </div>
+    <div class="grid-2 mb-12">
+      <div><label>其他費用 $</label><input type="number" id="exp-other" value="0" min="0" oninput="calcExpTotal()"></div>
+      <div><label>備註</label><input type="text" id="exp-note" placeholder="備註說明"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);padding:12px 16px;border-radius:8px;">
+      <span class="text-muted">本日支出合計</span>
+      <span class="bold" style="font-size:22px;color:var(--amber)" id="exp-total-display">$0</span>
+    </div>
+    <div class="flex-end mt-12">
+      <button class="btn btn-secondary" onclick="clearExpForm()">清除</button>
+      <button class="btn btn-primary" onclick="saveExpense()">✓ 儲存支出</button>
+    </div>
+  </div>
+
+  <!-- 搭架計價 -->
+  <div class="card">
+    <div class="card-title">搭架數量計價</div>
+    <div class="tbl-wrap mb-12">
+      <table id="scaffold-table">
+        <thead><tr><th>項目</th><th>單價 $</th><th>數量</th><th>合計 $</th><th></th></tr></thead>
+        <tbody id="scaffold-tbody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="addScaffoldRow()">＋ 新增項目</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;background:var(--surface);padding:12px 16px;border-radius:8px;">
+      <div>
+        <div style="font-size:12px;color:var(--muted)">搭架總計</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)" id="scaffold-total">$0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--muted)">稅後總收入（扣8%）</div>
+        <div style="font-size:18px;font-weight:700;color:var(--success)" id="scaffold-income">$0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--muted)">本期支出合計</div>
+        <div style="font-size:18px;font-weight:700;color:var(--danger)" id="scaffold-expense">$0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--muted)">剩餘利潤</div>
+        <div style="font-size:22px;font-weight:700;" id="scaffold-profit">$0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支出紀錄列表 -->
+  <div class="card">
+    <div class="card-title">支出紀錄列表</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>工地</th><th>工資小計</th><th>餐飲</th><th>加班/其他</th><th>合計</th><th>操作</th></tr></thead>
+        <tbody id="exp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== 工資管理 ==================== -->
+<div class="panel" id="panel-payroll">
+
+  <div class="period-bar">
+    <div>
+      <label>結算期間</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+        <input type="date" id="pay-from" style="width:140px;">
+        <span class="text-muted">至</span>
+        <input type="date" id="pay-to" style="width:140px;">
+        <button class="btn btn-primary btn-sm" onclick="loadPayroll()">載入</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="worker-tabs" id="worker-tabs"></div>
+
+  <div id="payroll-content">
+    <div class="empty">請選擇結算期間並點選工人</div>
+  </div>
+
+</div>
+
+<!-- ==================== 總覽 ==================== -->
+<div class="panel" id="panel-summary">
+
+  <div class="grid-4 mb-12" id="summary-stats"></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">各工人本期薪資</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>工人</th><th>出勤天數</th><th class="td-num">薪資</th><th class="td-num">代墊</th><th class="td-num">預支</th><th class="td-num">尚欠</th></tr></thead>
+          <tbody id="summary-payroll-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">最近支出紀錄</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>日期</th><th>工地</th><th class="td-num">金額</th></tr></thead>
+          <tbody id="summary-exp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- end .content -->
+
+<script>
+// ========== DATA MODEL ==========
+let DB = {
+  records: [],      // 工作紀錄
+  expenses: [],     // 工作支出
+  payroll: {},      // { workerId: [ {date,site,days,advItems,advAmt,preItems,preAmt,note} ] }
+  payrollMeta: {},  // { workerId: {prevBalance, prevPaid} }
+  scaffold: [],     // 搭架計價 rows [ {item,unitPrice,qty} ]
+};
+
+const WORKERS_PAYROLL = [
+  { id:'陳冠志', name:'黑哥', alias:'陳冠志', rate:3000 },
+  { id:'丁宜婷', name:'叮叮', alias:'丁宜婷', rate:3000 },
+  { id:'李俊賢', name:'猴子', alias:'李俊賢', rate:3000, deductions:[{label:'房租(上期)',amt:16500},{label:'管理費(下期)',amt:1500}] },
+  { id:'游宇玄', name:'魷魚', alias:'游宇玄', rate:3000 },
+  { id:'陳翊安', name:'陳翊安', alias:'陳翊安', rate:3000 },
+  { id:'張元福', name:'張元福', alias:'張元福', rate:3000 },
+  { id:'潘皓偉', name:'皓偉', alias:'潘皓偉', rate:3000 },
+];
+
+const SITE_WORKERS = ['老大','丁丁','大黑','魷魚','猴子','大安','阿福','皓偉','玹玹','阿寶'];
+const WAGE_CATS = [
+  {label:'老大', rate:4000},
+  {label:'師父', rate:3000},
+  {label:'凱文', rate:3500},
+  {label:'調工', rate:3000},
+  {label:'寶', rate:2800},
+  {label:'偉/福', rate:2500},
+  {label:'學徒23', rate:2300},
+  {label:'學徒22', rate:2200},
+  {label:'學徒20', rate:2000},
+];
+const SCAFFOLD_ITEMS = ['主架','樓梯','防塵網','延伸架','壁拉(鐵管壁拉)'];
+
+// ========== INIT ==========
+function init() {
+  const saved = localStorage.getItem('xuanzhan_db');
+  if (saved) { try { DB = JSON.parse(saved); } catch(e){} }
+  if (!DB.scaffold || !DB.scaffold.length) {
+    DB.scaffold = SCAFFOLD_ITEMS.map(i => ({item:i, unitPrice:0, qty:0}));
+  }
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  setToday('rec-date');
+  setToday('exp-date');
+
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('pay-from').value = fmt(firstDay);
+  document.getElementById('pay-to').value = fmt(today);
+
+  buildWorkerChips();
+  buildWorkerTabs();
+  renderRecords();
+  renderExpenses();
+  renderScaffold();
+  renderSummary();
+  updateExpRecSelect();
+}
+
+function save() { localStorage.setItem('xuanzhan_db', JSON.stringify(DB)); }
+function setToday(id) { document.getElementById(id).value = fmt(new Date()); }
+function fmt(d) { return d.toISOString().split('T')[0]; }
+function fmtMoney(n) { return '$' + Math.round(n||0).toLocaleString('zh-TW'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ========== TABS ==========
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['record','expense','payroll','summary'][i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='summary') renderSummary();
+  if (name==='expense') updateExpRecSelect();
+}
+
+// ========== WORKER CHIPS ==========
+function buildWorkerChips() {
+  const c = document.getElementById('rec-workers-chips');
+  c.innerHTML = SITE_WORKERS.map(w =>
+    `<div class="chip" onclick="toggleChip(this)" data-w="${w}">${w}</div>`
+  ).join('');
+}
+
+function toggleChip(el) { el.classList.toggle('on'); }
+
+function getSelectedWorkers() {
+  return [...document.querySelectorAll('#rec-workers-chips .chip.on')].map(c => c.dataset.w);
+}
+
+// ========== 工作紀錄 ==========
+function saveRecord() {
+  const date = document.getElementById('rec-date').value;
+  const site = document.getElementById('rec-site').value.trim();
+  if (!date || !site) { alert('請填寫日期和工地'); return; }
+  const rec = {
+    id: uid(), date, site,
+    boss: document.getElementById('rec-boss').value.trim(),
+    workers: getSelectedWorkers(),
+    external: parseInt(document.getElementById('rec-external').value)||0,
+    content: document.getElementById('rec-content').value.trim(),
+    note: document.getElementById('rec-note').value.trim(),
+  };
+  DB.records.unshift(rec);
+  save();
+  clearRecForm();
+  renderRecords();
+  updateExpRecSelect();
+}
+
+function clearRecForm() {
+  ['rec-date','rec-site','rec-boss','rec-content','rec-note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.type==='date') setToday(id); else el.value='';
+  });
+  document.getElementById('rec-external').value='';
+  document.querySelectorAll('#rec-workers-chips .chip').forEach(c => c.classList.remove('on'));
+}
+
+function deleteRecord(id) {
+  if (!confirm('確定刪除？')) return;
+  DB.records = DB.records.filter(r => r.id !== id);
+  save(); renderRecords(); updateExpRecSelect();
+}
+
+function renderRecords() {
+  const q = document.getElementById('rec-search').value.toLowerCase();
+  let recs = DB.records.filter(r => !q || r.site.toLowerCase().includes(q) || (r.content||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('rec-tbody');
+  if (!recs.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty">尚無工作紀錄</div></td></tr>`; return; }
+  tbody.innerHTML = recs.map(r => `
+    <tr>
+      <td style="white-space:nowrap">${r.date}</td>
+      <td>${r.site}</td>
+      <td>${r.boss||'-'}</td>
+      <td>${r.workers.length ? r.workers.map(w=>`<span class="tag tag-blue">${w}</span>`).join(' ') : '<span class="text-muted">-</span>'}</td>
+      <td class="td-center">${r.external||0}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.content||'-'}</td>
+      <td><button class="btn btn-danger" onclick="deleteRecord('${r.id}')">刪除</button></td>
+    </tr>
+  `).join('');
+}
+
+// ========== 工作支出 ==========
+function updateExpRecSelect() {
+  const sel = document.getElementById('exp-rec-select');
+  sel.innerHTML = '<option value="">-- 從紀錄帶入 --</option>' +
+    DB.records.slice(0,30).map(r => `<option value="${r.id}">${r.date} ${r.site}</option>`).join('');
+}
+
+function fillFromSelectedRecord() {
+  const id = document.getElementById('exp-rec-select').value;
+  if (!id) return;
+  const rec = DB.records.find(r => r.id===id);
+  if (!rec) return;
+  document.getElementById('exp-date').value = rec.date;
+  document.getElementById('exp-site').value = rec.site;
+}
+
+function autoFillFromRecord() {
+  const date = document.getElementById('exp-date').value;
+  const rec = DB.records.find(r => r.date===date);
+  if (rec) document.getElementById('exp-site').value = rec.site;
+}
+
+const W_RATES = [4000,3000,3500,3000,2800,2500,2300,2200,2000];
+
+function calcExpTotal() {
+  let wage = 0;
+  W_RATES.forEach((r,i) => { wage += (parseFloat(document.getElementById('w-'+i).value)||0)*r; });
+  const misc = ['exp-water1','exp-lunch','exp-water2','exp-ot','exp-other'].reduce((s,id) => s+(parseFloat(document.getElementById(id).value)||0), 0);
+  const total = wage + misc;
+  document.getElementById('exp-total-display').textContent = fmtMoney(total);
+  updateScaffoldProfit();
+  return total;
+}
+
+function saveExpense() {
+  const date = document.getElementById('exp-date').value;
+  if (!date) { alert('請填寫日期'); return; }
+  const workerDays = W_RATES.map((r,i) => parseFloat(document.getElementById('w-'+i).value)||0);
+  const wage = W_RATES.reduce((s,r,i) => s+workerDays[i]*r, 0);
+  const water1 = parseFloat(document.getElementById('exp-water1').value)||0;
+  const lunch  = parseFloat(document.getElementById('exp-lunch').value)||0;
+  const water2 = parseFloat(document.getElementById('exp-water2').value)||0;
+  const ot     = parseFloat(document.getElementById('exp-ot').value)||0;
+  const other  = parseFloat(document.getElementById('exp-other').value)||0;
+  const total  = wage + water1 + lunch + water2 + ot + other;
+  const exp = {
+    id: uid(), date,
+    site: document.getElementById('exp-site').value.trim(),
+    workerDays, wage, water1, lunch, water2, ot, other, total,
+    note: document.getElementById('exp-note').value.trim(),
+  };
+  DB.expenses.unshift(exp);
+  save(); clearExpForm(); renderExpenses(); updateScaffoldProfit(); renderSummary();
+}
+
+function clearExpForm() {
+  setToday('exp-date');
+  document.getElementById('exp-site').value='';
+  W_RATES.forEach((_,i) => document.getElementById('w-'+i).value=0);
+  ['exp-water1','exp-lunch','exp-water2','exp-ot','exp-other'].forEach(id => document.getElementById(id).value=0);
+  document.getElementById('exp-note').value='';
+  document.getElementById('exp-total-display').textContent='$0';
+}
+
+function deleteExpense(id) {
+  if (!confirm('確定刪除？')) return;
+  DB.expenses = DB.expenses.filter(e => e.id!==id);
+  save(); renderExpenses(); updateScaffoldProfit(); renderSummary();
+}
+
+function renderExpenses() {
+  const tbody = document.getElementById('exp-tbody');
+  if (!DB.expenses.length) { tbody.innerHTML=`<tr><td colspan="7"><div class="empty">尚無支出紀錄</div></td></tr>`; return; }
+  tbody.innerHTML = DB.expenses.map(e => `
+    <tr>
+      <td>${e.date}</td>
+      <td>${e.site||'-'}</td>
+      <td class="td-num">${fmtMoney(e.wage)}</td>
+      <td class="td-num">${fmtMoney((e.water1||0)+(e.lunch||0)+(e.water2||0))}</td>
+      <td class="td-num">${fmtMoney((e.ot||0)+(e.other||0))}</td>
+      <td class="td-num text-amber bold">${fmtMoney(e.total)}</td>
+      <td><button class="btn btn-danger" onclick="deleteExpense('${e.id}')">刪除</button></td>
+    </tr>
+  `).join('');
+}
+
+// ========== 搭架計價 ==========
+function renderScaffold() {
+  const tbody = document.getElementById('scaffold-tbody');
+  tbody.innerHTML = DB.scaffold.map((row,i) => `
+    <tr>
+      <td><input type="text" value="${row.item}" onchange="DB.scaffold[${i}].item=this.value;save();" style="background:var(--dark);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--text);width:160px;"></td>
+      <td><input class="input-cell" type="number" value="${row.unitPrice}" min="0" onchange="DB.scaffold[${i}].unitPrice=+this.value;calcScaffold();" style="width:90px;"></td>
+      <td><input class="input-cell" type="number" value="${row.qty}" min="0" onchange="DB.scaffold[${i}].qty=+this.value;calcScaffold();" style="width:70px;"></td>
+      <td class="td-num bold">${fmtMoney(row.unitPrice*row.qty)}</td>
+      <td><button class="btn btn-danger" onclick="removeScaffoldRow(${i})">✕</button></td>
+    </tr>
+  `).join('');
+  calcScaffold();
+}
+
+function addScaffoldRow() {
+  DB.scaffold.push({item:'新項目',unitPrice:0,qty:0});
+  save(); renderScaffold();
+}
+
+function removeScaffoldRow(i) {
+  DB.scaffold.splice(i,1); save(); renderScaffold();
+}
+
+function calcScaffold() {
+  const total = DB.scaffold.reduce((s,r) => s+r.unitPrice*r.qty, 0);
+  document.getElementById('scaffold-total').textContent = fmtMoney(total);
+  document.getElementById('scaffold-income').textContent = fmtMoney(total*0.92);
+  updateScaffoldProfit();
+  return total;
+}
+
+function updateScaffoldProfit() {
+  const income = DB.scaffold.reduce((s,r) => s+r.unitPrice*r.qty, 0) * 0.92;
+  const expTotal = DB.expenses.reduce((s,e) => s+e.total, 0);
+  const profit = income - expTotal;
+  const el = document.getElementById('scaffold-profit');
+  if (el) {
+    el.textContent = fmtMoney(profit);
+    el.style.color = profit>=0 ? 'var(--success)' : 'var(--danger)';
+  }
+  const expEl = document.getElementById('scaffold-expense');
+  if (expEl) expEl.textContent = fmtMoney(expTotal);
+}
+
+// ========== 工資管理 ==========
+function buildWorkerTabs() {
+  const c = document.getElementById('worker-tabs');
+  c.innerHTML = WORKERS_PAYROLL.map(w =>
+    `<button class="w-tab" onclick="selectWorker('${w.id}',this)">${w.name}<br><span style="font-size:11px;opacity:0.7">${w.alias}</span></button>`
+  ).join('');
+}
+
+let currentWorker = null;
+function selectWorker(id, el) {
+  document.querySelectorAll('.w-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentWorker = id;
+  renderPayroll(id);
+}
+
+function loadPayroll() {
+  if (currentWorker) renderPayroll(currentWorker);
+  else document.getElementById('payroll-content').innerHTML = '<div class="empty">請點選上方工人標籤</div>';
+}
+
+function renderPayroll(workerId) {
+  const w = WORKERS_PAYROLL.find(x => x.id===workerId);
+  if (!w) return;
+  const from = document.getElementById('pay-from').value;
+  const to = document.getElementById('pay-to').value;
+  if (!DB.payroll[workerId]) DB.payroll[workerId] = [];
+  if (!DB.payrollMeta[workerId]) DB.payrollMeta[workerId] = {prevBalance:0, prevPaid:0};
+  const meta = DB.payrollMeta[workerId];
+  const rows = DB.payroll[workerId];
+
+  const totalDays = rows.reduce((s,r) => s+r.days, 0);
+  const totalAdv = rows.reduce((s,r) => s+(r.advAmt||0), 0);
+  const totalPre = rows.reduce((s,r) => s+(r.preAmt||0), 0);
+  const wageSub = totalDays * w.rate + totalAdv;
+  const prevDebt = meta.prevBalance || 0;
+  const prevPaid = meta.prevPaid || 0;
+  const currPaid = rows.reduce((s,r) => s+(r.paidAmt||0), 0);
+  const owedTotal = prevDebt - prevPaid - currPaid;
+  const grandTotal = wageSub - totalPre;
+
+  // deductions for 猴子
+  const dedHTML = w.deductions ? w.deductions.map(d =>
+    `<div class="alert alert-info">${d.label}：${fmtMoney(d.amt)}</div>`
+  ).join('') : '';
+
+  document.getElementById('payroll-content').innerHTML = `
+    <div class="card">
+      <div class="card-title">${w.name}（${w.alias}）- 日薪 $${w.rate.toLocaleString()}</div>
+      ${dedHTML}
+      <div class="grid-4 mb-12">
+        <div class="stat"><div class="stat-label">出勤天數</div><div class="stat-val">${totalDays}</div><div class="stat-sub">天</div></div>
+        <div class="stat"><div class="stat-label">薪資小計</div><div class="stat-val">${fmtMoney(wageSub)}</div></div>
+        <div class="stat"><div class="stat-label">預支合計</div><div class="stat-val" style="color:var(--danger)">${fmtMoney(totalPre)}</div></div>
+        <div class="stat"><div class="stat-label">本期結算</div><div class="stat-val" style="color:var(--success)">${fmtMoney(grandTotal)}</div></div>
+      </div>
+
+      <!-- 欠款追蹤 -->
+      <div class="grid-4 mb-12">
+        <div><label>累積欠款（上期帶入）$</label><input type="number" value="${prevDebt}" min="0" onchange="DB.payrollMeta['${workerId}'].prevBalance=+this.value;save();renderPayroll('${workerId}')"></div>
+        <div><label>上期已還款 $</label><input type="number" value="${prevPaid}" min="0" onchange="DB.payrollMeta['${workerId}'].prevPaid=+this.value;save();renderPayroll('${workerId}')"></div>
+        <div><label>尚欠金額 $</label><input type="number" value="${Math.max(0,owedTotal)}" readonly style="background:rgba(220,38,38,0.1);color:var(--danger);"></div>
+        <div><label>上期結餘</label><input type="text" value="${fmtMoney(grandTotal)}" readonly style="background:rgba(22,163,74,0.1);color:#4ade80;"></div>
+      </div>
+
+      <!-- 新增出勤/代墊/預支 -->
+      <div class="card" style="border-color:rgba(217,119,6,0.3)">
+        <div class="card-title">新增記錄</div>
+        <div class="grid-3 mb-12">
+          <div><label>日期</label><input type="date" id="pr-date-${workerId}"></div>
+          <div><label>工地</label><input type="text" id="pr-site-${workerId}" placeholder="工地名稱"></div>
+          <div><label>出勤天數</label><input type="number" id="pr-days-${workerId}" value="1" min="0" step="0.5" style="width:100px;"></div>
+        </div>
+        <div class="grid-2 mb-12">
+          <div><label>代墊項目</label><input type="text" id="pr-advi-${workerId}" placeholder="代墊內容"></div>
+          <div><label>代墊金額 $</label><input type="number" id="pr-adva-${workerId}" value="0" min="0"></div>
+        </div>
+        <div class="grid-2 mb-12">
+          <div><label>預支項目</label><input type="text" id="pr-prei-${workerId}" placeholder="預支內容"></div>
+          <div><label>預支金額 $</label><input type="number" id="pr-prea-${workerId}" value="0" min="0"></div>
+        </div>
+        <div class="grid-2 mb-12">
+          <div><label>本期還款 $</label><input type="number" id="pr-paid-${workerId}" value="0" min="0"></div>
+          <div><label>備註</label><input type="text" id="pr-note-${workerId}" placeholder="備註"></div>
+        </div>
+        <div class="flex-end">
+          <button class="btn btn-primary" onclick="addPayrollRow('${workerId}')">＋ 新增</button>
+        </div>
+      </div>
+
+      <!-- 明細表 -->
+      <div class="tbl-wrap mt-12">
+        <table>
+          <thead><tr><th>日期</th><th>工地</th><th class="td-center">天</th><th>代墊項目</th><th class="td-num">代墊金額</th><th>預支項目</th><th class="td-num">預支金額</th><th class="td-num">還款</th><th>備註</th><th></th></tr></thead>
+          <tbody>${renderPayrollRows(workerId)}</tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="2">合計</td>
+              <td class="td-center">${totalDays}</td>
+              <td>-</td>
+              <td class="td-num">${fmtMoney(totalAdv)}</td>
+              <td>-</td>
+              <td class="td-num">${fmtMoney(totalPre)}</td>
+              <td class="td-num">${fmtMoney(currPaid)}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  `;
+  // set today for new row date
+  const di = document.getElementById('pr-date-'+workerId);
+  if (di && !di.value) di.value = fmt(new Date());
+}
+
+function renderPayrollRows(workerId) {
+  const rows = DB.payroll[workerId]||[];
+  if (!rows.length) return `<tr><td colspan="10"><div class="empty">尚無記錄</div></td></tr>`;
+  return rows.map((r,i) => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.site||'-'}</td>
+      <td class="td-center">${r.days}</td>
+      <td>${r.advItems||'-'}</td>
+      <td class="td-num">${fmtMoney(r.advAmt)}</td>
+      <td>${r.preItems||'-'}</td>
+      <td class="td-num">${fmtMoney(r.preAmt)}</td>
+      <td class="td-num">${fmtMoney(r.paidAmt)}</td>
+      <td>${r.note||'-'}</td>
+      <td><button class="btn btn-danger" onclick="deletePayrollRow('${workerId}',${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function addPayrollRow(workerId) {
+  const g = id => document.getElementById(id+'-'+workerId);
+  const row = {
+    date: g('pr-date').value || fmt(new Date()),
+    site: g('pr-site').value.trim(),
+    days: parseFloat(g('pr-days').value)||0,
+    advItems: g('pr-advi').value.trim(),
+    advAmt: parseFloat(g('pr-adva').value)||0,
+    preItems: g('pr-prei').value.trim(),
+    preAmt: parseFloat(g('pr-prea').value)||0,
+    paidAmt: parseFloat(g('pr-paid').value)||0,
+    note: g('pr-note').value.trim(),
+  };
+  if (!DB.payroll[workerId]) DB.payroll[workerId] = [];
+  DB.payroll[workerId].push(row);
+  save(); renderPayroll(workerId); renderSummary();
+}
+
+function deletePayrollRow(workerId, idx) {
+  if (!confirm('確定刪除？')) return;
+  DB.payroll[workerId].splice(idx,1);
+  save(); renderPayroll(workerId); renderSummary();
+}
+
+// ========== 總覽 ==========
+function renderSummary() {
+  const totalExp = DB.expenses.reduce((s,e) => s+e.total, 0);
+  const scaffoldTotal = DB.scaffold.reduce((s,r) => s+r.unitPrice*r.qty, 0);
+  const income = scaffoldTotal * 0.92;
+  const profit = income - totalExp;
+  const totalRecords = DB.records.length;
+
+  document.getElementById('summary-stats').innerHTML = `
+    <div class="stat"><div class="stat-label">工作紀錄筆數</div><div class="stat-val">${totalRecords}</div></div>
+    <div class="stat"><div class="stat-label">總支出</div><div class="stat-val" style="color:var(--danger)">${fmtMoney(totalExp)}</div></div>
+    <div class="stat"><div class="stat-label">搭架收入（稅後）</div><div class="stat-val" style="color:var(--success)">${fmtMoney(income)}</div></div>
+    <div class="stat"><div class="stat-label">利潤</div><div class="stat-val" style="color:${profit>=0?'var(--success)':'var(--danger)'}">${fmtMoney(profit)}</div></div>
+  `;
+
+  // payroll summary
+  const tbody = document.getElementById('summary-payroll-tbody');
+  tbody.innerHTML = WORKERS_PAYROLL.map(w => {
+    const rows = DB.payroll[w.id]||[];
+    const days = rows.reduce((s,r) => s+r.days, 0);
+    const adv = rows.reduce((s,r) => s+(r.advAmt||0), 0);
+    const pre = rows.reduce((s,r) => s+(r.preAmt||0), 0);
+    const wage = days*w.rate + adv;
+    const net = wage - pre;
+    const meta = DB.payrollMeta[w.id]||{};
+    const owed = (meta.prevBalance||0) - (meta.prevPaid||0);
+    return `<tr>
+      <td>${w.name}</td>
+      <td class="td-center">${days}</td>
+      <td class="td-num">${fmtMoney(wage)}</td>
+      <td class="td-num">${fmtMoney(adv)}</td>
+      <td class="td-num" style="color:var(--danger)">${fmtMoney(pre)}</td>
+      <td class="td-num" style="color:${owed>0?'var(--danger)':'var(--muted)'}">${fmtMoney(Math.max(0,owed))}</td>
+    </tr>`;
+  }).join('');
+
+  // expense summary
+  const etbody = document.getElementById('summary-exp-tbody');
+  const recent = DB.expenses.slice(0,10);
+  etbody.innerHTML = recent.length ? recent.map(e => `
+    <tr><td>${e.date}</td><td>${e.site||'-'}</td><td class="td-num text-amber">${fmtMoney(e.total)}</td></tr>
+  `).join('') : `<tr><td colspan="3"><div class="empty">尚無支出紀錄</div></td></tr>`;
+}
+
+// ========== IMPORT/EXPORT ==========
+function exportData() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '軒展管理資料_' + fmt(new Date()) + '.json';
+  a.click();
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        DB = JSON.parse(ev.target.result);
+        save();
+        renderRecords(); renderExpenses(); renderScaffold(); renderSummary(); updateExpRecSelect();
+        alert('資料匯入成功！');
+      } catch { alert('檔案格式錯誤'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+init();
+</script>
+</body>
+</html>
