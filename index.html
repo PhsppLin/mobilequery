@@ -23,6 +23,23 @@
     --danger: #ff6b6b;
     --radius: 14px;
     --radius-sm: 8px;
+    --bg-sticky: rgba(15,15,17,0.92);
+  }
+  [data-theme="light"] {
+    --bg: #f4f4f8;
+    --surface: #ffffff;
+    --surface2: #ededf2;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.13);
+    --accent: #2f5fe8;
+    --accent2: #4070ff;
+    --text: #111118;
+    --text2: #55556a;
+    --text3: #9090a8;
+    --success: #1a9e5c;
+    --warning: #c47b00;
+    --danger: #d93535;
+    --bg-sticky: rgba(244,244,248,0.92);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -107,7 +124,7 @@
 
   .top-bar {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(15,15,17,0.92);
+    background: var(--bg-sticky);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 0.5px solid var(--border);
@@ -140,13 +157,21 @@
     font-family: 'Noto Sans TC', sans-serif;
   }
   .logout-btn:hover { color: var(--text2); }
+  .theme-toggle {
+    background: none; border: 0.5px solid var(--border2);
+    cursor: pointer; padding: 4px 10px;
+    border-radius: 20px; transition: color 0.2s, border-color 0.2s;
+    font-size: 15px; line-height: 1;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
 
   .search-wrap {
     padding: 1rem;
     position: sticky;
     top: 53px;
     z-index: 99;
-    background: rgba(15,15,17,0.92);
+    background: var(--bg-sticky);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 0.5px solid var(--border);
@@ -540,6 +565,7 @@
     <div class="top-bar-title">手機方案查詢</div>
     <div class="data-date" id="data-date" style="display:none">更新中...</div>
     <div class="user-email" id="user-email"></div>
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="切換主題">🌙</button>
     <button class="logout-btn" onclick="doLogout()">登出</button>
   </div>
 
@@ -584,6 +610,20 @@
 <script>
 const SUPABASE_URL = "https://fvsbucfxtpcdqedyjcik.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2c2J1Y2Z4dHBjZHFlZHlqY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNjgyODEsImV4cCI6MjA4OTY0NDI4MX0.gJVMBCciujLnAqnAbc4L8wKyXKNP1iC6-s_ohTT8OKE";
+
+// ── THEME ──
+(function() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next === 'dark' ? '' : 'light');
+  localStorage.setItem('theme', next);
+  document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+}
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -633,6 +673,9 @@ function showApp(email) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('user-email').textContent = email;
+  // 同步主題按鈕圖示
+  const theme = localStorage.getItem('theme') || 'dark';
+  document.getElementById('theme-toggle-btn').textContent = theme === 'light' ? '☀️' : '🌙';
   showEmpty();
   loadDataDate();
 }
