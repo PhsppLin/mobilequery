@@ -458,6 +458,7 @@
     font-size: 15px; font-weight: 500;
     color: var(--warning); flex-shrink: 0;
   }
+  @keyframes fadeUp {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
@@ -750,18 +751,24 @@ async function doSearch(keyword) {
 
   try {
     if (currentTab === 'model') {
-      // ── 依手機搜尋：回傳手機清單 ──
-      const { data } = await sb.from('phones')
-        .select('*')
-        .ilike('model', pattern)
-        .order('brand').order('model')
-        .limit(50);
-      const phones = data || [];
+      // ── 依手機搜尋：分頁抓取全部符合的資料，避免色號佔滿筆數導致漏機型 ──
+      let phones = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const { data } = await sb.from('phones')
+          .select('*')
+          .ilike('model', pattern)
+          .order('brand').order('model')
+          .range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        phones.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
       document.getElementById('loading').style.display = 'none';
       if (!phones.length) { renderEmptyState('no-result'); return; }
-      document.getElementById('result-count').style.display = 'block';
-      document.getElementById('result-count').textContent = `找到 ${phones.length} 支手機`;
-      renderPhones(phones);
+      renderPhones(phones);  // 筆數由 renderPhones 依去色去重後顯示
 
     } else {
       // 依專案搜尋：使用 search_text 合併欄位，一次查詢完成
@@ -822,6 +829,17 @@ function renderEmptyState(type) {
 function fmt(n) {
   if (n === null || n === undefined || n === '') return '—';
   return Number(n).toLocaleString();
+}
+
+// 轉義 HTML 特殊字元，避免型號含 < > & " ' 時破版
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // 去除手機型號中的顏色標記，例如 -(黑)(5G) → (5G)，-(Silver) → ''
@@ -916,11 +934,11 @@ function renderByProject(records) {
           const phonesHtml = rows.map(r => `
             <div class="proj-phone-row">
               <div class="proj-phone-info">
-                <div class="proj-phone-name">${r.modelClean}</div>
+                <div class="proj-phone-name">${esc(r.modelClean)}</div>
                 <div class="proj-phone-meta">
                   空機 <span class="proj-val-price">${fmt(r.phones.unit_price)}</span>
                   &nbsp;保險 <span class="proj-val-ins">${fmt(r.phones.insurance_monthly)}</span>
-                  &nbsp;<span style="color:var(--text2)">${r.project_name}｜${r.feeNum || r.plan_name}｜${monthsLabel}</span>
+                  &nbsp;<span style="color:var(--text2)">${esc(r.project_name)}｜${esc(r.feeNum || r.plan_name)}｜${monthsLabel}</span>
                 </div>
               </div>
               <div class="proj-plan-price">${fmt(r.price)}</div>
@@ -929,7 +947,7 @@ function renderByProject(records) {
           brandsHtml += `
             <div class="proj-brand">
               <div class="proj-brand-header" onclick="toggleBrand('${brandId}')">
-                <span>${brand}</span>
+                <span>${esc(brand)}</span>
                 <span style="font-size:10px;color:var(--text3)">${rows.length} 支</span>
                 <span class="proj-group-chevron" id="gc-${brandId}">▶</span>
               </div>
@@ -955,7 +973,7 @@ function renderByProject(records) {
       projsHtml += `
         <div class="proj-group">
           <div class="proj-group-header" onclick="toggleGroup('${projId}')" style="background:rgba(79,127,255,0.07);color:var(--accent2);">
-            <span>${projFeeKey}</span>
+            <span>${esc(projFeeKey)}</span>
             <span style="font-size:10px;color:var(--text3)">${projCount} 支</span>
             <span class="proj-group-chevron" id="gc-${projId}">▶</span>
           </div>
@@ -1002,6 +1020,9 @@ function toggleGroup(id) {
   chevron.classList.toggle('open', isOpen);
 }
 
+// 料號 → 手機物件快取，供 openModal 依料號查回完整資料（避免把整個物件塞進 onclick）
+const phoneCache = {};
+
 function renderPhones(phones) {
   // 依去色後型號去重，同款不同顏色只顯示一筆
   const seen = new Map();
@@ -1011,12 +1032,19 @@ function renderPhones(phones) {
   });
   const unique = [...seen.values()];
 
+  // 更新快取
+  unique.forEach(p => { phoneCache[p.code] = p; });
+
+  // 筆數以去重後的實際卡片數顯示，與畫面一致
+  document.getElementById('result-count').style.display = 'block';
+  document.getElementById('result-count').textContent = `找到 ${unique.length} 支手機`;
+
   const list = document.getElementById('results-list');
   list.innerHTML = unique.map((p, i) => `
     <div class="phone-card" style="animation-delay:${i * 0.04}s">
       <div class="phone-card-header">
-        <div class="phone-name">${p.modelClean}</div>
-        <div class="brand-badge">${p.brand || ''}</div>
+        <div class="phone-name">${esc(p.modelClean)}</div>
+        <div class="brand-badge">${esc(p.brand || '')}</div>
       </div>
       <div class="phone-stats">
         <div class="stat-item">
@@ -1032,7 +1060,7 @@ function renderPhones(phones) {
           <div class="stat-value ins">${fmt(p.insurance_annual)}</div>
         </div>
       </div>
-      <button class="view-plans-btn" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <button class="view-plans-btn" onclick="openModal('${esc(p.code)}')">
         查看所有專案價格 ↗
       </button>
     </div>
@@ -1040,9 +1068,10 @@ function renderPhones(phones) {
 }
 
 // ── MODAL ──
-async function openModal(phone) {
-  const code = phone.code;
-  document.getElementById('modal-phone-name').textContent = phone.model;
+async function openModal(code) {
+  const phone = phoneCache[code];
+  if (!phone) return;
+  document.getElementById('modal-phone-name').textContent = phone.modelClean || phone.model;
   document.getElementById('modal-phone-sub').textContent = '載入中...';
   document.getElementById('modal-info-bar').innerHTML = `
     <div class="modal-info-item">
@@ -1129,8 +1158,8 @@ async function openModal(phone) {
         html += `
           <div class="plan-row">
             <div class="plan-info">
-              <div class="plan-name-text">${r.project_name}｜${r.plan_name}</div>
-              <div class="plan-meta">${r.plan_group}</div>
+              <div class="plan-name-text">${esc(r.project_name)}｜${esc(r.plan_name)}</div>
+              <div class="plan-meta">${esc(r.plan_group)}</div>
             </div>
             <div class="plan-months">${monthsLabel}</div>
             <div class="plan-price-tag">${fmt(r.price)}</div>
@@ -1153,6 +1182,14 @@ function closeModalDirect() {
   document.getElementById('modal-backdrop').classList.remove('open');
   document.body.style.overflow = '';
 }
+
+// 按 ESC 關閉彈窗
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' &&
+      document.getElementById('modal-backdrop').classList.contains('open')) {
+    closeModalDirect();
+  }
+});
 </script>
 </body>
 </html>
